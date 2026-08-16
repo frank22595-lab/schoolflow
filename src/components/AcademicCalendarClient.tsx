@@ -352,7 +352,7 @@ export default function AcademicCalendarClient({
           schoolId={schoolId}
           onClose={() => setSessionModal({ open: false })}
           onSaved={async () => { await refreshData(); setSessionModal({ open: false }); showToast('success', 'Session saved'); }}
-          onError={(msg) => showToast('error', msg)}
+          onError={(msg: string) => showToast('error', msg)}
         />
       )}
 
@@ -365,7 +365,7 @@ export default function AcademicCalendarClient({
           existingTermsInSession={termsBySession[termModal.sessionId] || []}
           onClose={() => setTermModal({ open: false })}
           onSaved={async () => { await refreshData(); setTermModal({ open: false }); showToast('success', 'Term saved'); }}
-          onError={(msg) => showToast('error', msg)}
+          onError={(msg: string) => showToast('error', msg)}
         />
       )}
 
