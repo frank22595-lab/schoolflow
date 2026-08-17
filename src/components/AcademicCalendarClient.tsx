@@ -378,7 +378,7 @@ export default function AcademicCalendarClient({
                 <AlertCircle className="w-5 h-5 text-error" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Delet {deleteConfirm.type}?</h3>
+                <h3 className="font-semibold text-gray-900">Delete {deleteConfirm.type}?</h3>
                 <p className="text-sm text-gray-500 mt-1">
                   <strong>{deleteConfirm.name}</strong> will be permanently removed.
                   {deleteConfirm.type === 'session' && ' All terms and related data will also be deleted.'}
