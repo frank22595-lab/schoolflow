@@ -19,7 +19,7 @@ export default async function DashboardLayout({
     .single();
 
   return (
-    <DashboardShell profile={profile}>
+    <DashboardShell user={profile} school={profile?.schools}>
       {children}
     </DashboardShell>
   );
