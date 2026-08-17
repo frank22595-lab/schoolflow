@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   GraduationCap, LayoutDashboard, Users, UserCog, Wallet, ClipboardCheck,
   BookOpen, MessageSquare, Settings, LogOut, Search, Bell, ChevronDown,
-  HelpCircle, Sparkles, Menu, X, Home,
+  HelpCircle, Sparkles, Menu, X, Home, Briefcase,
 } from 'lucide-react';
 
 interface DashboardShellProps {
@@ -77,6 +77,7 @@ export default function DashboardShell({ profile, children }: DashboardShellProp
     { href: '/dashboard/attendance', icon: ClipboardCheck, label: 'Attend' },
     { href: '/dashboard/fees', icon: Wallet, label: 'Fees' },
     { href: '/dashboard/results', icon: BookOpen, label: 'Results' },
+    { label: 'Staff', href: '/dashboard/staff', icon: Briefcase, group: 'People' },
   ];
 
   const isActive = (href: string) => pathname === href;
