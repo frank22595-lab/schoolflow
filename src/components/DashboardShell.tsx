@@ -6,10 +6,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   Home, Users, ClipboardCheck, Wallet, BookOpen, Menu, X,
-  Bell, Search, GraduationCap, Settings, LogOut, ChevronRight,
-  Briefcase, Heart, MessageCircle, BarChart3, Building2, Shield,
-  User as UserIcon, KeyRound, Palette, MoreHorizontal,
-  Grid3x3, ChevronDown,
+  Bell, Search, GraduationCap, Settings, LogOut, ChevronRight, ChevronLeft,
+  Briefcase, Heart, MessageCircle, BarChart3,
+  User as UserIcon, KeyRound, Palette, MoreHorizontal, ChevronDown,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 
 interface Props {
@@ -23,18 +23,27 @@ export default function DashboardShell({ children, user, school }: Props) {
   const pathname = usePathname();
   const supabase = createClient();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Close menus on route change
+  // Persist collapsed state
   useEffect(() => {
-    setSidebarOpen(false);
+    const saved = localStorage.getItem('sidebar-collapsed');
+    if (saved === '1') setDesktopCollapsed(true);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', desktopCollapsed ? '1' : '0');
+  }, [desktopCollapsed]);
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
     setMoreOpen(false);
     setProfileOpen(false);
   }, [pathname]);
 
-  // Close profile menu on outside click
   useEffect(() => {
     if (!profileOpen) return;
     const handler = (e: MouseEvent) => {
@@ -50,7 +59,6 @@ export default function DashboardShell({ children, user, school }: Props) {
     router.push('/login');
   }
 
-  // Sidebar groups (desktop full nav)
   const sidebarGroups = [
     {
       label: 'Overview',
@@ -89,7 +97,6 @@ export default function DashboardShell({ children, user, school }: Props) {
     },
   ];
 
-  // Bottom nav (mobile) — 4 main + More
   const bottomNav = [
     { label: 'Home', href: '/dashboard', icon: Home },
     { label: 'Students', href: '/dashboard/students', icon: GraduationCap },
@@ -97,7 +104,6 @@ export default function DashboardShell({ children, user, school }: Props) {
     { label: 'Fees', href: '/dashboard/fees', icon: Wallet },
   ];
 
-  // "More" sheet items (mobile)
   const moreItems = [
     {
       label: 'People',
@@ -136,30 +142,116 @@ export default function DashboardShell({ children, user, school }: Props) {
     ? user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
     : user?.email?.[0].toUpperCase() || 'U';
 
+  // Sidebar content (used both mobile drawer and desktop pinned)
+  const sidebarContent = (collapsed: boolean, isMobile: boolean) => (
+    <>
+      {/* Header inside sidebar */}
+      <div className={`h-14 lg:h-16 px-4 border-b border-gray-100 flex items-center ${collapsed && !isMobile ? 'justify-center' : 'justify-between'}`}>
+        <div className={`flex items-center gap-2 min-w-0 ${collapsed && !isMobile ? 'justify-center' : ''}`}>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
+            {school?.logo_url
+              ? <img src={school.logo_url} className="w-full h-full rounded-lg object-cover" alt="" />
+              : <GraduationCap className="w-4 h-4 text-white" />}
+          </div>
+          {(!collapsed || isMobile) && (
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-gray-900 truncate max-w-[160px]">{school?.name || 'School'}</div>
+              <div className="text-[10px] text-gray-500 -mt-0.5">Trial · 90d</div>
+            </div>
+          )}
+        </div>
+        {isMobile && (
+          <button onClick={() => setMobileSidebarOpen(false)}
+            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md">
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className={`flex-1 overflow-y-auto py-3 ${collapsed && !isMobile ? 'px-2' : 'px-3'} space-y-4`}>
+        {sidebarGroups.map(group => (
+          <div key={group.label}>
+            {(!collapsed || isMobile) && (
+              <div className="px-2 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                {group.label}
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map(item => {
+                const active = isActive(item.href);
+                return (
+                  <Link key={item.href} href={item.href}
+                    title={collapsed && !isMobile ? item.label : undefined}
+                    className={`flex items-center ${collapsed && !isMobile ? 'justify-center px-0' : 'gap-2.5 px-2.5'} py-2 rounded-md text-sm transition-colors ${
+                      active
+                        ? 'bg-indigo-50 text-indigo font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}>
+                    <item.icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-indigo' : 'text-gray-400'}`} />
+                    {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Collapse toggle (desktop only) */}
+      {!isMobile && (
+        <div className="border-t border-gray-100 p-2">
+          <button
+            onClick={() => setDesktopCollapsed(!desktopCollapsed)}
+            className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2 px-2.5'} py-2 rounded-md text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors`}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <><PanelLeftClose className="w-4 h-4" /><span>Collapse</span></>}
+          </button>
+        </div>
+      )}
+    </>
+  );
+
+  const sidebarWidth = desktopCollapsed ? 'lg:w-16' : 'lg:w-60';
+  const mainOffset = desktopCollapsed ? 'lg:ml-16' : 'lg:ml-60';
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ===== DESKTOP SIDEBAR (pinned) ===== */}
+      <aside className={`hidden lg:flex fixed top-0 left-0 h-full ${sidebarWidth} bg-white border-r border-gray-200 z-30 flex-col transition-all duration-200`}>
+        {sidebarContent(desktopCollapsed, false)}
+      </aside>
+
+      {/* ===== MOBILE SIDEBAR DRAWER ===== */}
+      {mobileSidebarOpen && (
+        <>
+          <div onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm lg:hidden" />
+          <aside className="fixed top-0 left-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col lg:hidden">
+            {sidebarContent(false, true)}
+          </aside>
+        </>
+      )}
+
       {/* ===== TOP BAR ===== */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
+      <header className={`sticky top-0 z-20 bg-white border-b border-gray-200 ${mainOffset} transition-all duration-200`}>
         <div className="flex items-center justify-between h-14 lg:h-16 px-4 lg:px-6">
-          {/* Left: hamburger + school */}
+          {/* Left: mobile hamburger */}
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)}
+            <button onClick={() => setMobileSidebarOpen(true)}
               className="p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md lg:hidden">
               <Menu className="w-5 h-5" />
             </button>
-            <button onClick={() => setSidebarOpen(true)}
-              className="hidden lg:flex items-center gap-2 p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
+            {/* Mobile-only school badge */}
+            <div className="flex items-center gap-2 lg:hidden">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
                 {school?.logo_url
                   ? <img src={school.logo_url} className="w-full h-full rounded-lg object-cover" alt="" />
                   : <GraduationCap className="w-4 h-4 text-white" />}
               </div>
               <div className="hidden sm:block min-w-0">
-                <div className="text-sm font-bold text-gray-900 truncate max-w-[180px]">{school?.name || 'School'}</div>
-                <div className="text-[10px] text-gray-500 -mt-0.5">Trial · 90d</div>
+                <div className="text-sm font-bold text-gray-900 truncate max-w-[160px]">{school?.name || 'School'}</div>
               </div>
             </div>
           </div>
@@ -174,7 +266,6 @@ export default function DashboardShell({ children, user, school }: Props) {
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-error rounded-full" />
             </button>
 
-            {/* Profile menu */}
             <div className="relative ml-1" data-profile-menu>
               <button
                 onClick={(e) => { e.stopPropagation(); setProfileOpen(!profileOpen); }}
@@ -227,59 +318,8 @@ export default function DashboardShell({ children, user, school }: Props) {
         </div>
       </header>
 
-      {/* ===== SIDEBAR (desktop drawer / mobile drawer) ===== */}
-      {sidebarOpen && (
-        <>
-          <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm" />
-          <aside className="fixed top-0 left-0 h-full w-72 bg-white z-50 shadow-2xl overflow-y-auto">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                  {school?.logo_url
-                    ? <img src={school.logo_url} className="w-full h-full rounded-lg object-cover" alt="" />
-                    : <GraduationCap className="w-5 h-5 text-white" />}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-bold text-gray-900 truncate">{school?.name || 'School'}</div>
-                  <div className="text-[10px] text-gray-500 -mt-0.5">Trial · 90d</div>
-                </div>
-              </div>
-              <button onClick={() => setSidebarOpen(false)} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <nav className="p-3 space-y-4">
-              {sidebarGroups.map(group => (
-                <div key={group.label}>
-                  <div className="px-2 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                    {group.label}
-                  </div>
-                  <div className="space-y-0.5">
-                    {group.items.map(item => {
-                      const active = isActive(item.href);
-                      return (
-                        <Link key={item.href} href={item.href}
-                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors ${
-                            active
-                              ? 'bg-indigo-50 text-indigo font-medium'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}>
-                          <item.icon className={`w-4 h-4 ${active ? 'text-indigo' : 'text-gray-400'}`} />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </nav>
-          </aside>
-        </>
-      )}
-
       {/* ===== MAIN CONTENT ===== */}
-      <main className="pb-20 lg:pb-8">
+      <main className={`pb-20 lg:pb-8 ${mainOffset} transition-all duration-200`}>
         {children}
       </main>
 
@@ -299,7 +339,6 @@ export default function DashboardShell({ children, user, school }: Props) {
               </Link>
             );
           })}
-          {/* More button */}
           <button onClick={() => setMoreOpen(true)}
             className={`flex flex-col items-center justify-center gap-0.5 relative ${
               moreOpen ? 'text-indigo' : 'text-gray-500'
@@ -314,7 +353,7 @@ export default function DashboardShell({ children, user, school }: Props) {
       {moreOpen && (
         <>
           <div onClick={() => setMoreOpen(false)} className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm lg:hidden" />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl lg:hidden max-h-[80vh] overflow-y-auto animate-slide-in-top">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl lg:hidden max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">More options</h3>
