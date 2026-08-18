@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import {
-  User, Phone, Briefcase, Loader2, AlertCircle, Save, Check, Trash2,
+  User, Phone, Briefcase, Loader2, AlertCircle, Save, Check,
+  KeyRound, RefreshCw, Copy, CheckCircle2,
 } from 'lucide-react';
+import DeleteConfirm from './DeleteConfirm';
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -17,11 +20,12 @@ const NIGERIAN_STATES = [
 
 export default function EditParentForm({ parent }: { parent: any }) {
   const router = useRouter();
+  const supabase = createClient();
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDelete, setShowDelete] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [accessCode, setAccessCode] = useState(parent.access_code);
 
   const [form, setForm] = useState({
     title: parent.title || '',
@@ -87,17 +91,32 @@ export default function EditParentForm({ parent }: { parent: any }) {
   }
 
   async function handleDelete() {
-    setDeleting(true);
-    setError(null);
+    const res = await fetch(`/api/parents/${parent.id}`, { method: 'DELETE' });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    router.push('/dashboard/parents');
+  }
+
+  async function regenerateCode() {
+    if (!confirm('Generate a new access code? The old one will stop working.')) return;
+    setRegenerating(true);
     try {
-      const res = await fetch(`/api/parents/${parent.id}`, { method: 'DELETE' });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      router.push('/dashboard/parents');
+      const { data: newCode, error: codeErr } = await supabase.rpc('generate_parent_access_code', { p_school_id: parent.school_id });
+      if (codeErr) throw codeErr;
+      const { error } = await supabase.from('parents').update({ access_code: newCode }).eq('id', parent.id);
+      if (error) throw error;
+      setAccessCode(newCode);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
-      setDeleting(false);
+      alert('Failed: ' + (err instanceof Error ? err.message : ''));
+    } finally {
+      setRegenerating(false);
     }
+  }
+
+  async function copyCode() {
+    await navigator.clipboard.writeText(accessCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   const fullName = `${parent.first_name} ${parent.last_name}`;
@@ -111,6 +130,31 @@ export default function EditParentForm({ parent }: { parent: any }) {
           <div><label className="label">Middle</label><input type="text" className="input" value={form.middle_name} onChange={(e) => setForm({ ...form, middle_name: e.target.value })} /></div>
           <div><label className="label">Last *</label><input type="text" required className="input" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} /></div>
         </div>
+      </FormCard>
+
+      {/* Access code card */}
+      <FormCard icon={KeyRound} iconColor="text-indigo" iconBg="bg-indigo-50" title="Parent portal access" desc="This code lets them log into the parent portal">
+        <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-lg flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo rounded-md flex items-center justify-center flex-shrink-0">
+            <KeyRound className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-semibold text-indigo-dark uppercase">Current access code</div>
+            <div className="font-mono text-xl font-bold text-gray-900 tracking-wider mt-0.5">{accessCode}</div>
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
+            <button type="button" onClick={copyCode} className="p-2 bg-white border border-indigo-200 rounded-md text-indigo hover:bg-indigo-50" title="Copy">
+              {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            </button>
+            <button type="button" onClick={regenerateCode} disabled={regenerating}
+              className="p-2 bg-white border border-indigo-200 rounded-md text-indigo hover:bg-indigo-50" title="Generate new">
+              {regenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500">
+          Regenerating creates a new code and invalidates the old one. Only do this if the parent lost their code.
+        </p>
       </FormCard>
 
       <FormCard icon={Phone} iconColor="text-sky-600" iconBg="bg-sky-50" title="Contact" desc="Phone, WhatsApp, email">
@@ -158,29 +202,12 @@ export default function EditParentForm({ parent }: { parent: any }) {
         <div><label className="label">Notes</label><textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
       </FormCard>
 
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 lg:p-6">
-        <h3 className="font-semibold text-red-900 flex items-center gap-2"><AlertCircle className="w-4 h-4" />Danger zone</h3>
-        <p className="text-xs text-red-700 mt-1 mb-3">
-          Deleting this parent will unlink them from all students. This cannot be undone.
-        </p>
-        {!showDelete ? (
-          <button type="button" onClick={() => setShowDelete(true)} className="px-3 py-1.5 bg-white border border-red-300 text-error rounded-md text-sm font-medium hover:bg-red-100">
-            <Trash2 className="w-3.5 h-3.5 inline mr-1.5" />Delete parent
-          </button>
-        ) : (
-          <div className="bg-white border border-red-300 rounded-lg p-3 space-y-2">
-            <label className="text-xs text-gray-700">Type <strong>{fullName}</strong> to confirm:</label>
-            <input type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} className="input text-sm" placeholder={fullName} />
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => { setShowDelete(false); setConfirmText(''); }} className="btn-secondary text-sm">Cancel</button>
-              <button type="button" onClick={handleDelete} disabled={confirmText !== fullName || deleting}
-                className="px-3 py-1.5 bg-error text-white rounded-md text-sm font-medium disabled:opacity-40 hover:bg-red-600">
-                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Delete permanently'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <DeleteConfirm
+        entityLabel="parent"
+        entityName={fullName}
+        description="Deleting this parent unlinks them from all students. This action cannot be undone."
+        onDelete={handleDelete}
+      />
 
       <div className="fixed bottom-16 lg:bottom-4 left-0 right-0 lg:left-64 z-30 p-4 bg-white lg:bg-white/95 lg:backdrop-blur-md border-t lg:border lg:mx-6 lg:rounded-xl border-gray-200 lg:shadow-lg flex items-center justify-between gap-3 max-w-4xl mx-auto lg:right-6">
         <div className="flex-1 min-w-0">

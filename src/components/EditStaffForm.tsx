@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  User, Briefcase, Phone, MapPin, Loader2, AlertCircle, Save,
-  AlertTriangle, Trash2,
+  User, Briefcase, Phone, MapPin, Loader2, AlertCircle, Save, AlertTriangle,
 } from 'lucide-react';
+import DeleteConfirm from './DeleteConfirm';
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -19,10 +19,7 @@ const NIGERIAN_STATES = [
 export default function EditStaffForm({ staff }: { staff: any }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDelete, setShowDelete] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
 
   const [form, setForm] = useState({
     staff_number: staff.staff_number,
@@ -54,6 +51,8 @@ export default function EditStaffForm({ staff }: { staff: any }) {
     emergency_contact_phone: staff.emergency_contact_phone || '',
     emergency_contact_relationship: staff.emergency_contact_relationship || '',
     status: staff.status || 'active',
+    status_reason: staff.status_reason || '',
+    end_date: staff.end_date || '',
     notes: staff.notes || '',
   });
 
@@ -87,6 +86,8 @@ export default function EditStaffForm({ staff }: { staff: any }) {
         emergency_contact_name: form.emergency_contact_name || null,
         emergency_contact_phone: form.emergency_contact_phone || null,
         emergency_contact_relationship: form.emergency_contact_relationship || null,
+        status_reason: form.status_reason || null,
+        end_date: form.end_date || null,
         notes: form.notes || null,
       };
       const res = await fetch(`/api/staff/${staff.id}`, {
@@ -103,20 +104,14 @@ export default function EditStaffForm({ staff }: { staff: any }) {
   }
 
   async function handleDelete() {
-    setDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/staff/${staff.id}`, { method: 'DELETE' });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      router.push('/dashboard/staff');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
-      setDeleting(false);
-    }
+    const res = await fetch(`/api/staff/${staff.id}`, { method: 'DELETE' });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    router.push('/dashboard/staff');
   }
 
   const fullName = `${staff.first_name} ${staff.last_name}`;
+  const showEndFields = ['terminated', 'resigned', 'retired'].includes(form.status);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pb-24 lg:pb-8">
@@ -131,7 +126,35 @@ export default function EditStaffForm({ staff }: { staff: any }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div><label className="label">Gender</label><select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}><option value="">—</option><option value="male">Male</option><option value="female">Female</option></select></div>
           <div><label className="label">Date of birth</label><input type="date" className="input" value={form.date_of_birth} onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })} /></div>
-          <div><label className="label">Status</label><select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="active">Active</option><option value="on_leave">On leave</option><option value="terminated">Terminated</option><option value="resigned">Resigned</option><option value="retired">Retired</option></select></div>
+          <div><label className="label">Marital status</label><select className="input" value={form.marital_status} onChange={(e) => setForm({ ...form, marital_status: e.target.value })}><option value="">—</option><option value="single">Single</option><option value="married">Married</option><option value="divorced">Divorced</option><option value="widowed">Widowed</option></select></div>
+        </div>
+
+        <div className="pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="label">Status</label>
+              <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                <option value="active">Active</option>
+                <option value="on_leave">On leave</option>
+                <option value="terminated">Terminated</option>
+                <option value="resigned">Resigned</option>
+                <option value="retired">Retired</option>
+              </select>
+            </div>
+            {showEndFields && (
+              <div>
+                <label className="label">End date</label>
+                <input type="date" className="input" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              </div>
+            )}
+          </div>
+          {showEndFields && (
+            <div className="mt-3">
+              <label className="label">Reason</label>
+              <input type="text" className="input" placeholder="e.g. Resignation letter, contract end"
+                value={form.status_reason} onChange={(e) => setForm({ ...form, status_reason: e.target.value })} />
+            </div>
+          )}
         </div>
       </FormCard>
 
@@ -187,27 +210,15 @@ export default function EditStaffForm({ staff }: { staff: any }) {
         </div>
       </FormCard>
 
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 lg:p-6">
-        <h3 className="font-semibold text-red-900 flex items-center gap-2"><AlertCircle className="w-4 h-4" />Danger zone</h3>
-        <p className="text-xs text-red-700 mt-1 mb-3">Removes this staff member from lists.</p>
-        {!showDelete ? (
-          <button type="button" onClick={() => setShowDelete(true)} className="px-3 py-1.5 bg-white border border-red-300 text-error rounded-md text-sm font-medium hover:bg-red-100">
-            <Trash2 className="w-3.5 h-3.5 inline mr-1.5" />Delete staff
-          </button>
-        ) : (
-          <div className="bg-white border border-red-300 rounded-lg p-3 space-y-2">
-            <label className="text-xs text-gray-700">Type <strong>{fullName}</strong> to confirm:</label>
-            <input type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} className="input text-sm" placeholder={fullName} />
-            <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => { setShowDelete(false); setConfirmText(''); }} className="btn-secondary text-sm">Cancel</button>
-              <button type="button" onClick={handleDelete} disabled={confirmText !== fullName || deleting}
-                className="px-3 py-1.5 bg-error text-white rounded-md text-sm font-medium disabled:opacity-40 hover:bg-red-600">
-                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Delete permanently'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <FormCard icon={User} iconColor="text-purple-600" iconBg="bg-purple-50" title="Notes" desc="Internal notes">
+        <textarea rows={2} className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+      </FormCard>
+
+      <DeleteConfirm
+        entityLabel="staff member"
+        entityName={fullName}
+        onDelete={handleDelete}
+      />
 
       <div className="fixed bottom-16 lg:bottom-4 left-0 right-0 lg:left-64 z-30 p-4 bg-white lg:bg-white/95 lg:backdrop-blur-md border-t lg:border lg:mx-6 lg:rounded-xl border-gray-200 lg:shadow-lg flex items-center justify-between gap-3 max-w-4xl mx-auto lg:right-6">
         <div className="flex-1 min-w-0">

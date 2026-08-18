@@ -8,11 +8,20 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('users').select('school_id').eq('id', user!.id).single();
+  const schoolId = profile!.school_id;
 
-  const { data: student } = await supabase.from('students').select('*').eq('id', id).eq('school_id', profile!.school_id).maybeSingle();
+  const { data: student } = await supabase.from('students').select('*').eq('id', id).eq('school_id', schoolId).maybeSingle();
   if (!student) notFound();
 
-  const { data: houses } = await supabase.from('houses').select('*').eq('school_id', profile!.school_id).order('name');
+  const [{ data: houses }, { data: sections }, { data: classes }, { data: classLevels }, { data: currentSession }, { data: currentEnrollment }] = await Promise.all([
+    supabase.from('houses').select('*').eq('school_id', schoolId).order('name'),
+    supabase.from('sections').select('*, classes(class_level_id)').eq('school_id', schoolId).order('name'),
+    supabase.from('classes').select('*').eq('school_id', schoolId),
+    supabase.from('class_levels').select('*').eq('school_id', schoolId).order('sequence'),
+    supabase.from('sessions').select('*').eq('school_id', schoolId).eq('is_current', true).maybeSingle(),
+    supabase.from('enrollments').select('*, sections(*, classes(class_level_id, class_levels(name)))')
+      .eq('student_id', id).eq('status', 'active').maybeSingle(),
+  ]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
@@ -30,7 +39,15 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
         <p className="text-gray-500 mt-1 text-sm">{student.admission_number} · {student.first_name} {student.last_name}</p>
       </div>
 
-      <EditStudentForm student={student} houses={houses || []} />
+      <EditStudentForm
+        student={student}
+        houses={houses || []}
+        sections={sections || []}
+        classes={classes || []}
+        classLevels={classLevels || []}
+        currentSession={currentSession}
+        currentEnrollment={currentEnrollment}
+      />
     </div>
   );
 }
