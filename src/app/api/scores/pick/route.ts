@@ -50,25 +50,34 @@ export async function POST(req: NextRequest) {
       scoreSessionId = created.id;
     }
 
-    // Pre-create student_scores rows for all enrolled students
+    // Pre-create student_scores rows for all enrolled students (using admin to bypass RLS)
     const { data: enrolled } = await admin.from('enrollments')
-      .select('student_id, students(deleted_at)')
-      .eq('section_id', sectionId).eq('session_id', sessId).eq('status', 'active');
+      .select('student_id')
+      .eq('section_id', sectionId)
+      .eq('session_id', sessId)
+      .eq('status', 'active');
 
-    const activeStudentIds = (enrolled || [])
-      .filter((e: any) => !e.students?.deleted_at)
-      .map((e: any) => e.student_id);
+    const studentIds = (enrolled || []).map((e: any) => e.student_id);
 
-    if (activeStudentIds.length > 0) {
-      const rows = activeStudentIds.map(studentId => ({
-        school_id: schoolId,
-        score_session_id: scoreSessionId,
-        student_id: studentId,
-        scores: {},
-        total_score: 0,
-      }));
-      // Insert only rows that don't exist yet
-      await admin.from('student_scores').upsert(rows, { onConflict: 'score_session_id,student_id', ignoreDuplicates: true });
+    // Filter out deleted students
+    if (studentIds.length > 0) {
+      const { data: activeStudents } = await admin.from('students')
+        .select('id')
+        .in('id', studentIds)
+        .is('deleted_at', null);
+
+      const activeIds = (activeStudents || []).map((s: any) => s.id);
+
+      if (activeIds.length > 0) {
+        const rows = activeIds.map((studentId: string) => ({
+          school_id: schoolId,
+          score_session_id: scoreSessionId,
+          student_id: studentId,
+          scores: {},
+          total_score: 0,
+        }));
+        await admin.from('student_scores').upsert(rows, { onConflict: 'score_session_id,student_id', ignoreDuplicates: true });
+      }
     }
 
     return NextResponse.json({ success: true, scoreSessionId });

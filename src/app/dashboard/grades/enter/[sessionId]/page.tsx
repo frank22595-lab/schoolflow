@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ScoreEntryClient from '@/components/ScoreEntryClient';
+
+const admin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 export default async function ScoreEntryPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
@@ -9,7 +16,7 @@ export default async function ScoreEntryPage({ params }: { params: Promise<{ ses
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase.from('users').select('school_id').eq('id', user!.id).single();
 
-  const { data: scoreSession } = await supabase
+  const { data: scoreSession } = await admin
     .from('score_sessions')
     .select('*, sections(name, full_name, classes(class_levels(name))), subjects(name, code), terms(name, sessions(name))')
     .eq('id', sessionId)
@@ -19,18 +26,17 @@ export default async function ScoreEntryPage({ params }: { params: Promise<{ ses
   if (!scoreSession) notFound();
 
   const [{ data: assessments }, { data: scores }, { data: bands }] = await Promise.all([
-    supabase.from('assessment_types').select('*').eq('school_id', profile!.school_id).eq('is_active', true).order('sequence'),
-    supabase.from('student_scores')
+    admin.from('assessment_types').select('*').eq('school_id', profile!.school_id).eq('is_active', true).order('sequence'),
+    admin.from('student_scores')
       .select('*, students(id, first_name, middle_name, last_name, admission_number, photo_url)')
       .eq('score_session_id', sessionId),
-    supabase.from('grade_bands')
+    admin.from('grade_bands')
       .select('*, grade_scales!inner(is_default, school_id)')
       .eq('grade_scales.is_default', true)
       .eq('grade_scales.school_id', profile!.school_id)
       .order('sequence'),
   ]);
 
-  // Sort scores by student last name
   const sortedScores = (scores || []).sort((a: any, b: any) => {
     const nA = `${a.students?.last_name} ${a.students?.first_name}`.toLowerCase();
     const nB = `${b.students?.last_name} ${b.students?.first_name}`.toLowerCase();
