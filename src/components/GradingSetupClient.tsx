@@ -120,10 +120,10 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
         </div>
       </div>
 
-      {tab === 'scale' && <ScaleTab scale={defaultScale} bands={defaultBands} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m) => showToast('error', m)} />}
-      {tab === 'assessments' && <AssessmentsTab assessments={assessments} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m) => showToast('error', m)} />}
-      {tab === 'subjects' && <SubjectsTab subjects={subjects} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m) => showToast('error', m)} />}
-      {tab === 'assign' && <AssignTab classLevels={classLevels} subjects={subjects} classSubjects={classSubjects} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m) => showToast('error', m)} />}
+      {tab === 'scale' && <ScaleTab scale={defaultScale} bands={defaultBands} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
+      {tab === 'assessments' && <AssessmentsTab assessments={assessments} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
+      {tab === 'subjects' && <SubjectsTab subjects={subjects} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
+      {tab === 'assign' && <AssignTab classLevels={classLevels} subjects={subjects} classSubjects={classSubjects} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
 
       {toast && <Toast toast={toast} />}
     </div>
