@@ -35,7 +35,9 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const section = sections;
   const cls = section ? classes?.find(c => c.id === section.class_id) : null;
   const level = cls ? classLevels?.find(l => l.id === cls.class_level_id) : null;
-  const sectionLabel = section && level ? `${level.name} ${section.name}` : null;
+  const sectionLabel = section && level
+  ? (section.name === level.name ? level.name : `${level.name} ${section.name}`)
+  : null;
   const initials = `${student.first_name[0]}${student.last_name[0]}`.toUpperCase();
 
   const age = student.date_of_birth
