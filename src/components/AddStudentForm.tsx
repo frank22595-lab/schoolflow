@@ -116,6 +116,18 @@ export default function AddStudentForm({
     setForm(f => ({ ...f, section_id: '', stream: '' }));
     setArmChoice('');
     setError(null);
+
+    // Auto-pick section if class has only one section (the "None" arm)
+    if (form.class_level_id && !isSeniorSecondary) {
+      const cls = classes.find(c => c.class_level_id === form.class_level_id && c.session_id === currentSession?.id);
+      if (cls) {
+        const secs = sections.filter(s => s.class_id === cls.id);
+        if (secs.length === 1) {
+          setForm(f => ({ ...f, section_id: secs[0].id }));
+          setArmChoice(secs[0].id === secs[0].id && secs[0].name === selectedLevel?.name ? 'none' : secs[0].id);
+        }
+      }
+    }
   }, [form.class_level_id]);
 
   async function ensureClassAndSetNoneArm() {
@@ -254,6 +266,15 @@ export default function AddStudentForm({
       }
     }
 
+        // Require section pick if session exists
+    if (currentSession && !form.section_id) {
+      setError('Please pick a class and arm for the student.');
+      setSaving(false);
+      // Scroll to top so error is visible
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     // Build parents payload — filter out empty search blocks
     const parentsPayload = parents.filter(p => p.mode !== 'search' || p.existingParentId).map(p => ({
       mode: p.mode,
@@ -325,7 +346,16 @@ export default function AddStudentForm({
   const armSections = availableSections.filter(s => s.name !== selectedLevel?.name);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-24 lg:pb-8">
+        <form onSubmit={handleSubmit} className="space-y-6 pb-24 lg:pb-8">
+      {error && (
+        <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg flex items-start gap-2 sticky top-4 z-20 shadow-lg">
+          <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-semibold text-red-900 text-sm">Cannot save</div>
+            <div className="text-xs text-red-700 mt-0.5">{error}</div>
+          </div>
+        </div>
+      )}
       {!currentSession && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
