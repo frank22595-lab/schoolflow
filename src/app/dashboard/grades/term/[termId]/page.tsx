@@ -23,7 +23,7 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
     { data: behaviors },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('sections').select('*, classes(class_level_id, class_levels(id, name))').eq('school_id', schoolId).order('name'),
+    supabase.from('sections').select('*, classes(class_level_id, class_levels(id, name, sequence))').eq('school_id', schoolId),
     supabase.from('class_subjects').select('*').eq('school_id', schoolId),
     supabase.from('subjects').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
     supabase.from('score_sessions').select('*, student_scores(id, total_score, is_absent, grade)')

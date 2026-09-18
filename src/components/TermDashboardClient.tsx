@@ -29,8 +29,15 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
   const [loading, setLoading] = useState(false);
 
   // Calculate per-section stats
+// Calculate per-section stats
   const sectionStats = useMemo(() => {
-    return sections.map(sec => {
+    const sortedSections = [...sections].sort((a, b) => {
+      const seqA = a.classes?.class_levels?.sequence ?? 999;
+      const seqB = b.classes?.class_levels?.sequence ?? 999;
+      if (seqA !== seqB) return seqA - seqB;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    return sortedSections.map(sec => {
       const classLevelId = sec.classes?.class_level_id;
       const totalSubjects = classSubjects.filter(cs => cs.class_level_id === classLevelId).length;
       const enteredSubjects = scoreSessions.filter(ss => ss.section_id === sec.id).length;
@@ -50,7 +57,6 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
       };
     });
   }, [sections, classSubjects, scoreSessions, enrollments, behaviors]);
-
   // Overall stats
   const totals = useMemo(() => {
     const totalSheets = sectionStats.reduce((sum, s) => sum + s.totalSubjects, 0);
