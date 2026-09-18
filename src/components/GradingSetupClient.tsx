@@ -1,12 +1,101 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Award, BookOpen, ClipboardList, Sparkles, Check, X,
-  Loader2, Plus, Trash2, AlertCircle, CheckCircle2, Info,
-  ChevronRight, GraduationCap, Palette,
+  Award, BookOpen, ClipboardList, Sparkles, Check,
+  Loader2, Plus, Trash2, AlertCircle, CheckCircle2,
+  GraduationCap, Zap, LayoutGrid,
 } from 'lucide-react';
+
+const GRADE_PRESETS = [
+  {
+    id: 'waec',
+    name: 'WAEC Standard',
+    description: 'A1–F9 (Nigerian secondary school)',
+    grades: ['A1 (75+)', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9'],
+    recommended: 'Most Nigerian secondary schools',
+    color: 'indigo',
+  },
+  {
+    id: 'letter',
+    name: 'Simple Letter',
+    description: 'A, B, C, D, E, F',
+    grades: ['A (80+)', 'B (70+)', 'C (60+)', 'D (50+)', 'E (40+)', 'F'],
+    recommended: 'Simple and clear',
+    color: 'sky',
+  },
+  {
+    id: 'percentage',
+    name: 'Percentage Bands',
+    description: 'Distinction, Credit, Pass, Fail',
+    grades: ['Distinction (75+)', 'Credit', 'Pass', 'Weak Pass', 'Fail'],
+    recommended: 'Descriptive grading',
+    color: 'emerald',
+  },
+  {
+    id: 'cambridge',
+    name: 'Cambridge / British',
+    description: 'A*, A, B, C, D, E, U',
+    grades: ['A* (90+)', 'A', 'B', 'C', 'D', 'E', 'U'],
+    recommended: 'International curriculum schools',
+    color: 'purple',
+  },
+  {
+    id: 'primary',
+    name: 'Primary School',
+    description: 'Excellent, Very Good, Good, Fair, Poor',
+    grades: ['Excellent (80+)', 'Very Good', 'Good', 'Fair', 'Needs Effort', 'Poor'],
+    recommended: 'Nursery and primary schools',
+    color: 'amber',
+  },
+  {
+    id: 'gpa',
+    name: 'University GPA',
+    description: 'A, B+, B, C+, C, D, F (5-point)',
+    grades: ['A (70+)', 'B+', 'B', 'C+', 'C', 'D', 'F'],
+    recommended: 'Higher institutions',
+    color: 'red',
+  },
+];
+
+const ASSESSMENT_PRESETS = [
+  {
+    id: 'standard',
+    name: 'Nigerian Standard',
+    description: 'CA1 (20) + CA2 (20) + Exam (60)',
+    breakdown: ['CA1: 20', 'CA2: 20', 'Exam: 60'],
+    recommended: 'Most Nigerian schools',
+  },
+  {
+    id: 'two_cas',
+    name: 'Two-part',
+    description: 'CA (40) + Exam (60)',
+    breakdown: ['CA: 40', 'Exam: 60'],
+    recommended: 'Simpler assessment',
+  },
+  {
+    id: 'with_project',
+    name: 'With Project',
+    description: 'CA1 (15) + CA2 (15) + Project (10) + Exam (60)',
+    breakdown: ['CA1: 15', 'CA2: 15', 'Project: 10', 'Exam: 60'],
+    recommended: 'For project-based subjects',
+  },
+  {
+    id: 'cambridge',
+    name: 'Cambridge Style',
+    description: 'Coursework (40) + Exam (60)',
+    breakdown: ['Coursework: 40', 'Exam: 60'],
+    recommended: 'Cambridge / British schools',
+  },
+  {
+    id: 'four_cas',
+    name: 'Four CAs',
+    description: 'CA1 + CA2 + CA3 + CA4 (10 each) + Exam (60)',
+    breakdown: ['CA1: 10', 'CA2: 10', 'CA3: 10', 'CA4: 10', 'Exam: 60'],
+    recommended: 'Continuous assessment focus',
+  },
+];
 
 interface Props {
   schoolId: string;
@@ -24,6 +113,7 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
   const [seeding, setSeeding] = useState(false);
   const [tab, setTab] = useState<'scale' | 'assessments' | 'subjects' | 'assign'>('scale');
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [applyingPreset, setApplyingPreset] = useState<string | null>(null);
 
   function showToast(type: 'success' | 'error', msg: string) {
     setToast({ type, msg });
@@ -31,22 +121,42 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
   }
 
   async function runSetupWizard() {
-    if (!confirm('This will add the WAEC grading scale, standard assessments (CA1/CA2/Exam), and Nigerian standard subjects. Continue?')) return;
+    if (!confirm('Set up your grading system with Nigerian defaults? You can change presets or edit after.')) return;
     setSeeding(true);
     try {
       const res = await fetch('/api/grading/seed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ schoolId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      showToast('success', `Setup complete! Added ${data.subjects_added} subjects and grade scale.`);
+      showToast('success', 'Setup complete!');
       router.refresh();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Setup failed');
     } finally {
       setSeeding(false);
+    }
+  }
+
+  async function applyPreset(kind: 'grade_scale' | 'assessment', preset: string) {
+    const label = kind === 'grade_scale' ? 'grade scale' : 'assessment structure';
+    if (!confirm(`This will REPLACE your current ${label} with the ${preset} preset. Continue?`)) return;
+
+    setApplyingPreset(`${kind}-${preset}`);
+    try {
+      const res = await fetch('/api/grading/preset', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId, kind, preset }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showToast('success', `${label} updated`);
+      router.refresh();
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Failed');
+    } finally {
+      setApplyingPreset(null);
     }
   }
 
@@ -59,35 +169,12 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
           </div>
           <h2 className="text-xl font-bold text-gray-900">One-click setup</h2>
           <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
-            We'll set up the WAEC grading scale, standard CA1/CA2/Exam assessments, and 32 common Nigerian subjects. Everything is editable afterwards.
+            Start with WAEC grading, standard CA1/CA2/Exam, and 32 Nigerian subjects. Change presets anytime.
           </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mt-6 text-left">
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <Award className="w-5 h-5 text-warning mb-2" />
-              <div className="font-semibold text-sm">Grade Scale</div>
-              <div className="text-xs text-gray-500 mt-1">A1–F9 (WAEC standard)</div>
-            </div>
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <ClipboardList className="w-5 h-5 text-success mb-2" />
-              <div className="font-semibold text-sm">Assessments</div>
-              <div className="text-xs text-gray-500 mt-1">CA1 (20) + CA2 (20) + Exam (60)</div>
-            </div>
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <BookOpen className="w-5 h-5 text-indigo mb-2" />
-              <div className="font-semibold text-sm">Subjects</div>
-              <div className="text-xs text-gray-500 mt-1">32 Nigerian standard subjects</div>
-            </div>
-          </div>
-
           <button onClick={runSetupWizard} disabled={seeding}
             className="mt-6 px-6 py-3 bg-indigo hover:bg-indigo-dark text-white rounded-lg font-semibold shadow-lg shadow-indigo/30 disabled:opacity-50 inline-flex items-center gap-2">
             {seeding ? <><Loader2 className="w-5 h-5 animate-spin" />Setting up...</> : <><Sparkles className="w-5 h-5" />Run one-click setup</>}
           </button>
-
-          <p className="text-[11px] text-gray-500 mt-4">
-            You'll be able to edit everything, add/remove items, and assign subjects to each class level.
-          </p>
         </div>
         {toast && <Toast toast={toast} />}
       </>
@@ -96,6 +183,7 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
 
   const defaultScale = scales.find(s => s.is_default) || scales[0];
   const defaultBands = bands.filter(b => b.grade_scale_id === defaultScale?.id);
+  const activeScaleName = defaultScale?.name || '';
 
   return (
     <div className="space-y-4">
@@ -120,17 +208,122 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
         </div>
       </div>
 
-      {tab === 'scale' && <ScaleTab scale={defaultScale} bands={defaultBands} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
-      {tab === 'assessments' && <AssessmentsTab assessments={assessments} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
-      {tab === 'subjects' && <SubjectsTab subjects={subjects} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
-      {tab === 'assign' && <AssignTab classLevels={classLevels} subjects={subjects} classSubjects={classSubjects} schoolId={schoolId} onDone={() => { showToast('success', 'Saved'); router.refresh(); }} onErr={(m: string) => showToast('error', m)} />}
+      {tab === 'scale' && (
+        <>
+          {/* Preset picker */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                <LayoutGrid className="w-4 h-4 text-indigo" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Choose a grade scale preset</h3>
+                <p className="text-xs text-gray-500">Pick one that matches your school, then edit below if needed</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {GRADE_PRESETS.map(p => {
+                const isActive = activeScaleName === p.name.replace('/', '/') ||
+                                 (p.id === 'waec' && activeScaleName === 'WAEC Standard') ||
+                                 (p.id === 'letter' && activeScaleName === 'Simple Letter') ||
+                                 (p.id === 'percentage' && activeScaleName === 'Percentage Bands') ||
+                                 (p.id === 'cambridge' && activeScaleName === 'Cambridge / British') ||
+                                 (p.id === 'primary' && activeScaleName === 'Primary School') ||
+                                 (p.id === 'gpa' && activeScaleName === 'University GPA');
+                const isApplying = applyingPreset === `grade_scale-${p.id}`;
+                return (
+                  <div key={p.id} className={`p-4 rounded-xl border-2 transition-all ${
+                    isActive ? 'border-indigo bg-indigo-50/50' : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-gray-900 text-sm">{p.name}</h4>
+                      {isActive && <span className="px-1.5 py-0.5 bg-indigo text-white text-[9px] font-bold rounded uppercase">Active</span>}
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">{p.description}</p>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {p.grades.slice(0, 4).map((g, i) => (
+                        <span key={i} className="text-[10px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">{g}</span>
+                      ))}
+                      {p.grades.length > 4 && <span className="text-[10px] text-gray-400">+{p.grades.length - 4}</span>}
+                    </div>
+                    <p className="text-[10px] text-gray-400 italic mb-3">{p.recommended}</p>
+                    <button onClick={() => applyPreset('grade_scale', p.id)} disabled={isApplying || isActive}
+                      className={`w-full py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        isActive ? 'bg-gray-100 text-gray-400 cursor-not-allowed' :
+                        isApplying ? 'bg-indigo/50 text-white' :
+                        'bg-indigo hover:bg-indigo-dark text-white'
+                      }`}>
+                      {isActive ? '✓ In use' : isApplying ? <><Loader2 className="w-3 h-3 animate-spin inline mr-1" />Applying...</> : 'Use this preset'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Edit current */}
+          <ScaleTab scale={defaultScale} bands={defaultBands} schoolId={schoolId}
+            onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+            onErr={(m: string) => showToast('error', m)} />
+        </>
+      )}
+
+      {tab === 'assessments' && (
+        <>
+          {/* Preset picker for assessments */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 lg:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4 text-success" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Choose an assessment structure</h3>
+                <p className="text-xs text-gray-500">Pick how your school splits scores per term</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {ASSESSMENT_PRESETS.map(p => {
+                const isApplying = applyingPreset === `assessment-${p.id}`;
+                return (
+                  <div key={p.id} className="p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-gray-300">
+                    <h4 className="font-semibold text-gray-900 text-sm mb-1">{p.name}</h4>
+                    <p className="text-xs text-gray-500 mb-2">{p.description}</p>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {p.breakdown.map((b, i) => (
+                        <span key={i} className="text-[10px] bg-emerald-50 text-emerald-700 rounded px-1.5 py-0.5 font-medium">{b}</span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-400 italic mb-3">{p.recommended}</p>
+                    <button onClick={() => applyPreset('assessment', p.id)} disabled={isApplying}
+                      className="w-full py-1.5 rounded-md text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
+                      {isApplying ? <><Loader2 className="w-3 h-3 animate-spin inline mr-1" />Applying...</> : 'Use this preset'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <AssessmentsTab assessments={assessments} schoolId={schoolId}
+            onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+            onErr={(m: string) => showToast('error', m)} />
+        </>
+      )}
+
+      {tab === 'subjects' && <SubjectsTab subjects={subjects} schoolId={schoolId}
+        onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+        onErr={(m: string) => showToast('error', m)} />}
+
+      {tab === 'assign' && <AssignTab classLevels={classLevels} subjects={subjects} classSubjects={classSubjects} schoolId={schoolId}
+        onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+        onErr={(m: string) => showToast('error', m)} />}
 
       {toast && <Toast toast={toast} />}
     </div>
   );
 }
 
-// ============ SCALE TAB ============
+// ============ SCALE TAB — edit active scale ============
 function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
   const [rows, setRows] = useState(bands.map((b: any) => ({ ...b })));
   const [saving, setSaving] = useState(false);
@@ -139,11 +332,9 @@ function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
   function update(i: number, field: string, value: any) {
     setRows((r: any) => r.map((row: any, idx: number) => idx === i ? { ...row, [field]: value } : row));
   }
-
   function addRow() {
     setRows((r: any) => [...r, { grade: '', min_score: 0, max_score: 0, remark: '', color: 'gray', sequence: r.length + 1 }]);
   }
-
   function removeRow(i: number) {
     setRows((r: any) => r.filter((_: any, idx: number) => idx !== i));
   }
@@ -152,8 +343,7 @@ function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
     setSaving(true);
     try {
       const res = await fetch('/api/grading/scale', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ schoolId, scaleId: scale.id, bands: rows }),
       });
       const data = await res.json();
@@ -166,13 +356,15 @@ function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
     }
   }
 
+  if (!scale) {
+    return <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">Pick a preset above to get started</div>;
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 lg:p-6 space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2"><Award className="w-4 h-4 text-warning" />{scale?.name}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Edit grade ranges, remarks, and colors</p>
-        </div>
+      <div>
+        <h3 className="font-semibold text-gray-900 flex items-center gap-2"><Award className="w-4 h-4 text-warning" />Edit: {scale?.name}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">Fine-tune ranges, remarks, and colors for the active scale</p>
       </div>
 
       <div className="overflow-x-auto -mx-4 lg:-mx-6 px-4 lg:px-6">
@@ -190,26 +382,16 @@ function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
           <tbody>
             {rows.map((r: any, i: number) => (
               <tr key={i} className="border-b border-gray-50">
-                <td className="py-1.5 px-2">
-                  <input className="input font-mono font-bold text-sm w-16" value={r.grade} onChange={(e) => update(i, 'grade', e.target.value)} />
-                </td>
-                <td className="py-1.5 px-2">
-                  <input type="number" step="0.01" className="input text-sm w-20" value={r.min_score} onChange={(e) => update(i, 'min_score', parseFloat(e.target.value))} />
-                </td>
-                <td className="py-1.5 px-2">
-                  <input type="number" step="0.01" className="input text-sm w-20" value={r.max_score} onChange={(e) => update(i, 'max_score', parseFloat(e.target.value))} />
-                </td>
-                <td className="py-1.5 px-2">
-                  <input className="input text-sm" value={r.remark || ''} onChange={(e) => update(i, 'remark', e.target.value)} />
-                </td>
+                <td className="py-1.5 px-2"><input className="input font-mono font-bold text-sm w-20" value={r.grade} onChange={(e) => update(i, 'grade', e.target.value)} /></td>
+                <td className="py-1.5 px-2"><input type="number" step="0.01" className="input text-sm w-20" value={r.min_score} onChange={(e) => update(i, 'min_score', parseFloat(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input type="number" step="0.01" className="input text-sm w-20" value={r.max_score} onChange={(e) => update(i, 'max_score', parseFloat(e.target.value))} /></td>
+                <td className="py-1.5 px-2"><input className="input text-sm" value={r.remark || ''} onChange={(e) => update(i, 'remark', e.target.value)} /></td>
                 <td className="py-1.5 px-2">
                   <select className="input text-sm w-24" value={r.color} onChange={(e) => update(i, 'color', e.target.value)}>
                     {colors.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </td>
-                <td className="py-1.5 px-2">
-                  <button onClick={() => removeRow(i)} className="p-1 text-gray-400 hover:text-error"><Trash2 className="w-3.5 h-3.5" /></button>
-                </td>
+                <td className="py-1.5 px-2"><button onClick={() => removeRow(i)} className="p-1 text-gray-400 hover:text-error"><Trash2 className="w-3.5 h-3.5" /></button></td>
               </tr>
             ))}
           </tbody>
@@ -230,7 +412,6 @@ function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
 function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
   const [rows, setRows] = useState(assessments.map((a: any) => ({ ...a })));
   const [saving, setSaving] = useState(false);
-
   const total = rows.reduce((sum: number, r: any) => sum + (parseFloat(r.max_score) || 0), 0);
 
   function update(i: number, field: string, value: any) {
@@ -250,8 +431,7 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
     setSaving(true);
     try {
       const res = await fetch('/api/grading/scale', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ schoolId, assessments: rows }),
       });
       const data = await res.json();
@@ -268,12 +448,10 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 lg:p-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-success" />Assessment types</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Define what teachers score (CA1, CA2, Exam, etc.)</p>
+          <h3 className="font-semibold text-gray-900 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-success" />Edit assessment types</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Fine-tune your assessments</p>
         </div>
-        <div className={`text-sm font-bold ${total === 100 ? 'text-success' : 'text-warning'}`}>
-          Total: {total}/100
-        </div>
+        <div className={`text-sm font-bold ${total === 100 ? 'text-success' : 'text-warning'}`}>Total: {total}/100</div>
       </div>
 
       <div className="overflow-x-auto -mx-4 lg:-mx-6 px-4 lg:px-6">
@@ -282,7 +460,7 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
             <tr className="text-left text-[10px] text-gray-500 uppercase border-b border-gray-100">
               <th className="py-2 px-2 font-semibold">Name</th>
               <th className="py-2 px-2 font-semibold">Code</th>
-              <th className="py-2 px-2 font-semibold">Max Score</th>
+              <th className="py-2 px-2 font-semibold">Max</th>
               <th className="py-2 px-2 font-semibold">Exam?</th>
               <th className="py-2 px-2 w-8"></th>
             </tr>
@@ -307,23 +485,15 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
           {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving...</> : 'Save changes'}
         </button>
       </div>
-
-      {total !== 100 && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs text-amber-800">
-          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          Assessment max scores should sum to 100 for standard grading. Currently: {total}.
-        </div>
-      )}
     </div>
   );
 }
 
-// ============ SUBJECTS TAB ============
+// ============ SUBJECTS TAB (unchanged from before) ============
 function SubjectsTab({ subjects, schoolId, onDone, onErr }: any) {
   const [rows, setRows] = useState(subjects.map((s: any) => ({ ...s })));
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState('');
-
   const categories = ['core', 'elective', 'vocational', 'language', 'science', 'arts', 'commercial'];
 
   function update(i: number, field: string, value: any) {
@@ -335,15 +505,13 @@ function SubjectsTab({ subjects, schoolId, onDone, onErr }: any) {
   function removeRow(i: number) {
     setRows((r: any) => r.filter((_: any, idx: number) => idx !== i));
   }
-
   const filtered = filter ? rows.filter((r: any) => r.name.toLowerCase().includes(filter.toLowerCase()) || r.code?.toLowerCase().includes(filter.toLowerCase())) : rows;
 
   async function save() {
     setSaving(true);
     try {
       const res = await fetch('/api/grading/subjects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ schoolId, subjects: rows }),
       });
       const data = await res.json();
@@ -408,7 +576,7 @@ function SubjectsTab({ subjects, schoolId, onDone, onErr }: any) {
   );
 }
 
-// ============ ASSIGN TAB — subjects per class level ============
+// ============ ASSIGN TAB ============
 function AssignTab({ classLevels, subjects, classSubjects, schoolId, onDone, onErr }: any) {
   const [assignments, setAssignments] = useState(() => {
     const map: Record<string, Set<string>> = {};
@@ -426,8 +594,7 @@ function AssignTab({ classLevels, subjects, classSubjects, schoolId, onDone, onE
     setAssignments((a: any) => {
       const next = { ...a };
       const set = new Set(next[levelId]);
-      if (set.has(subjectId)) set.delete(subjectId);
-      else set.add(subjectId);
+      if (set.has(subjectId)) set.delete(subjectId); else set.add(subjectId);
       next[levelId] = set;
       return next;
     });
@@ -437,12 +604,10 @@ function AssignTab({ classLevels, subjects, classSubjects, schoolId, onDone, onE
     setSaving(true);
     try {
       const payload = Object.entries(assignments).map(([levelId, subjectIds]: any) => ({
-        classLevelId: levelId,
-        subjectIds: Array.from(subjectIds),
+        classLevelId: levelId, subjectIds: Array.from(subjectIds),
       }));
       const res = await fetch('/api/grading/subjects', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ schoolId, assignments: payload }),
       });
       const data = await res.json();
@@ -458,8 +623,7 @@ function AssignTab({ classLevels, subjects, classSubjects, schoolId, onDone, onE
   if (classLevels.length === 0) {
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-2">
-        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-        No class levels found. Set them up in Classes settings first.
+        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />No class levels found. Set them up in Classes settings first.
       </div>
     );
   }
@@ -471,7 +635,6 @@ function AssignTab({ classLevels, subjects, classSubjects, schoolId, onDone, onE
         <p className="text-xs text-gray-500 mt-0.5">Pick which subjects each class level offers</p>
       </div>
 
-      {/* Level pills */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 lg:-mx-6 px-4 lg:px-6">
         {classLevels.map((l: any) => {
           const count = assignments[l.id]?.size || 0;
@@ -488,7 +651,6 @@ function AssignTab({ classLevels, subjects, classSubjects, schoolId, onDone, onE
         })}
       </div>
 
-      {/* Subject grid */}
       {activeLevel && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {subjects.map((s: any) => {
