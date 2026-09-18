@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import TermDashboardClient from '@/components/TermDashboardClient';
+
+const admin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 export default async function TermDashboardPage({ params }: { params: Promise<{ termId: string }> }) {
   const { termId } = await params;
@@ -16,6 +23,7 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
 
   const sessionId = term.session_id;
 
+  // Use admin client for enrollments (bypasses RLS)
   const [
     { data: sections },
     { data: classSubjects },
@@ -25,15 +33,15 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
     { data: behaviors },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('sections').select('*, classes(class_level_id, class_levels(id, name, sequence))').eq('school_id', schoolId),
-    supabase.from('class_subjects').select('*').eq('school_id', schoolId),
-    supabase.from('subjects').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
-    supabase.from('score_sessions').select('*, student_scores(id, total_score, is_absent, grade)')
+    admin.from('sections').select('*, classes(class_level_id, class_levels(id, name, sequence))').eq('school_id', schoolId),
+    admin.from('class_subjects').select('*').eq('school_id', schoolId),
+    admin.from('subjects').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+    admin.from('score_sessions').select('*, student_scores(id, total_score, is_absent, grade)')
       .eq('school_id', schoolId).eq('term_id', termId),
-    supabase.from('enrollments').select('student_id, section_id, students(deleted_at)')
+    admin.from('enrollments').select('student_id, section_id, students(deleted_at, first_name, last_name, admission_number)')
       .eq('school_id', schoolId).eq('session_id', sessionId).eq('status', 'active'),
-    supabase.from('student_behavior').select('student_id').eq('school_id', schoolId).eq('term_id', termId),
-    supabase.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
+    admin.from('student_behavior').select('student_id').eq('school_id', schoolId).eq('term_id', termId),
+    admin.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
   ]);
 
   return (
