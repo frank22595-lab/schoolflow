@@ -116,7 +116,7 @@ export default function BehaviorEntryClient({ schoolId, student, term, termId, s
             {affective.map(trait => (
               <RatingRow key={trait.id} name={trait.name}
                 value={affectiveRatings[trait.name]}
-                onChange={(v) => autoSave('affective', trait.name, v)} />
+                onChange={(v: number) => autoSave('affective', trait.name, v)} />
             ))}
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function BehaviorEntryClient({ schoolId, student, term, termId, s
             {psychomotor.map(skill => (
               <RatingRow key={skill.id} name={skill.name}
                 value={psychomotorRatings[skill.name]}
-                onChange={(v) => autoSave('psychomotor', skill.name, v)} />
+                onChange={(v: number) => autoSave('psychomotor', skill.name, v)} />
             ))}
           </div>
         </div>
