@@ -25,12 +25,23 @@ export async function POST(req: NextRequest) {
       .select().single();
     if (sErr) return NextResponse.json({ error: 'Create student failed: ' + sErr.message }, { status: 400 });
 
-    // 2. Create enrollment
+    // 2. Create enrollment + update current_section_id on student
     if (sessionId && sectionId) {
-      await adminSupabase.from('enrollments').insert({
+      const { error: eErr } = await adminSupabase.from('enrollments').insert({
         school_id: schoolId, student_id: newStudent.id, session_id: sessionId,
-        section_id: sectionId, status: 'active', enrolled_date: student.admission_date,
+        section_id: sectionId, status: 'active', enrollment_date: student.admission_date,
       });
+      if (eErr) {
+        console.error('Enrollment failed:', eErr);
+        return NextResponse.json({
+          error: 'Student created but enrollment failed: ' + eErr.message,
+          studentId: newStudent.id,
+        }, { status: 500 });
+      }
+      // Set current_section_id on student so the profile page shows the class
+      await adminSupabase.from('students')
+        .update({ current_section_id: sectionId })
+        .eq('id', newStudent.id);
     }
 
     // 3. Process parents
