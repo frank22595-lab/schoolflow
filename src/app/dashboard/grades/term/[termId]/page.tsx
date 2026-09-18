@@ -14,6 +14,8 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
     .eq('id', termId).eq('school_id', schoolId).maybeSingle();
   if (!term) notFound();
 
+  const sessionId = term.session_id;
+
   const [
     { data: sections },
     { data: classSubjects },
@@ -29,7 +31,7 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
     supabase.from('score_sessions').select('*, student_scores(id, total_score, is_absent, grade)')
       .eq('school_id', schoolId).eq('term_id', termId),
     supabase.from('enrollments').select('student_id, section_id, students(deleted_at)')
-      .eq('school_id', schoolId).eq('session_id', term.sessions?.id).eq('status', 'active'),
+      .eq('school_id', schoolId).eq('session_id', sessionId).eq('status', 'active'),
     supabase.from('student_behavior').select('student_id').eq('school_id', schoolId).eq('term_id', termId),
     supabase.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
   ]);
