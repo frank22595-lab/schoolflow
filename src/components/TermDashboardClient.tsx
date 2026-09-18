@@ -28,6 +28,13 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
   const [commentsDrawer, setCommentsDrawer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  if (typeof window !== 'undefined') {
+    console.log('DEBUG enrollments length:', enrollments.length);
+    console.log('DEBUG first 3 enrollments:', enrollments.slice(0, 3));
+    console.log('DEBUG sections length:', sections.length);
+    console.log('DEBUG first 3 section ids:', sections.slice(0, 3).map((s: any) => ({ id: s.id, name: s.name })));
+  }
+
   // Calculate per-section stats
 // Calculate per-section stats
   const sectionStats = useMemo(() => {
