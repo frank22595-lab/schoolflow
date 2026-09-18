@@ -131,7 +131,7 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       showToast('success', 'Setup complete!');
-      router.refresh();
+      window.location.reload();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Setup failed');
     } finally {
@@ -152,7 +152,7 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       showToast('success', `${label} updated`);
-      router.refresh();
+      window.location.reload();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Failed');
     } finally {
@@ -263,7 +263,7 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
 
           {/* Edit current */}
           <ScaleTab scale={defaultScale} bands={defaultBands} schoolId={schoolId}
-            onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+            onDone={() => { showToast('success', 'Saved'); window.location.reload(); }}
             onErr={(m: string) => showToast('error', m)} />
         </>
       )}
@@ -305,17 +305,17 @@ export default function GradingSetupClient({ schoolId, scales, bands, assessment
           </div>
 
           <AssessmentsTab assessments={assessments} schoolId={schoolId}
-            onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+            onDone={() => { showToast('success', 'Saved'); window.location.reload(); }}
             onErr={(m: string) => showToast('error', m)} />
         </>
       )}
 
       {tab === 'subjects' && <SubjectsTab subjects={subjects} schoolId={schoolId}
-        onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+        onDone={() => { showToast('success', 'Saved'); window.location.reload(); }}
         onErr={(m: string) => showToast('error', m)} />}
 
       {tab === 'assign' && <AssignTab classLevels={classLevels} subjects={subjects} classSubjects={classSubjects} schoolId={schoolId}
-        onDone={() => { showToast('success', 'Saved'); router.refresh(); }}
+        onDone={() => { showToast('success', 'Saved'); window.location.reload(); }}
         onErr={(m: string) => showToast('error', m)} />}
 
       {toast && <Toast toast={toast} />}
