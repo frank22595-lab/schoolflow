@@ -42,7 +42,7 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
       const totalSubjects = classSubjects.filter(cs => cs.class_level_id === classLevelId).length;
       const enteredSubjects = scoreSessions.filter(ss => ss.section_id === sec.id).length;
       const finalizedSubjects = scoreSessions.filter(ss => ss.section_id === sec.id && ss.is_finalized).length;
-      const students = enrollments.filter((e: any) => e.section_id === sec.id && !e.students?.deleted_at);
+      const students = enrollments.filter((e: any) => e.section_id === sec.id);
       const studentIds = students.map((e: any) => e.student_id);
       const behaviorDone = behaviors.filter(b => studentIds.includes(b.student_id)).length;
 

@@ -23,13 +23,14 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
 
   const sessionId = term.session_id;
 
-  // Use admin client for enrollments (bypasses RLS)
+  // Use admin client so RLS doesn't silently return empty arrays
   const [
     { data: sections },
     { data: classSubjects },
     { data: subjects },
     { data: scoreSessions },
     { data: enrollments },
+    { data: activeStudents },
     { data: behaviors },
     { data: settings },
   ] = await Promise.all([
@@ -38,11 +39,21 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
     admin.from('subjects').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
     admin.from('score_sessions').select('*, student_scores(id, total_score, is_absent, grade)')
       .eq('school_id', schoolId).eq('term_id', termId),
-    admin.from('enrollments').select('student_id, section_id, students(deleted_at, first_name, last_name, admission_number)')
+    admin.from('enrollments').select('student_id, section_id')
       .eq('school_id', schoolId).eq('session_id', sessionId).eq('status', 'active'),
+    admin.from('students').select('id, first_name, last_name, admission_number').eq('school_id', schoolId).is('deleted_at', null),
     admin.from('student_behavior').select('student_id').eq('school_id', schoolId).eq('term_id', termId),
     admin.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
   ]);
+
+  // Attach student info to enrollments client-side (avoids join issues)
+  const activeIds = new Set((activeStudents || []).map((s: any) => s.id));
+  const enrichedEnrollments = (enrollments || [])
+    .filter((e: any) => activeIds.has(e.student_id))
+    .map((e: any) => ({
+      ...e,
+      students: (activeStudents || []).find((s: any) => s.id === e.student_id),
+    }));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -63,7 +74,7 @@ export default async function TermDashboardPage({ params }: { params: Promise<{ 
         classSubjects={classSubjects || []}
         subjects={subjects || []}
         scoreSessions={scoreSessions || []}
-        enrollments={enrollments || []}
+        enrollments={enrichedEnrollments}
         behaviors={behaviors || []}
         settings={settings}
       />
