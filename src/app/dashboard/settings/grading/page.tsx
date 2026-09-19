@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import GradingSetupClient from '@/components/GradingSetupClient';
+
+const admin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 export default async function GradingSetupPage() {
   const supabase = await createClient();
@@ -9,12 +16,12 @@ export default async function GradingSetupPage() {
   const schoolId = profile!.school_id;
 
   const [{ data: scales }, { data: bands }, { data: assessments }, { data: subjects }, { data: classSubjects }, { data: classLevels }] = await Promise.all([
-    supabase.from('grade_scales').select('*').eq('school_id', schoolId).order('created_at'),
-    supabase.from('grade_bands').select('*').order('sequence'),
-    supabase.from('assessment_types').select('*').eq('school_id', schoolId).order('sequence'),
-    supabase.from('subjects').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
-    supabase.from('class_subjects').select('*').eq('school_id', schoolId),
-    supabase.from('class_levels').select('*').eq('school_id', schoolId).order('sequence'),
+    admin.from('grade_scales').select('*').eq('school_id', schoolId).order('created_at'),
+    admin.from('grade_bands').select('*').order('sequence'),
+    admin.from('assessment_types').select('*').eq('school_id', schoolId).order('sequence'),
+    admin.from('subjects').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+    admin.from('class_subjects').select('*').eq('school_id', schoolId),
+    admin.from('class_levels').select('*').eq('school_id', schoolId).order('sequence'),
   ]);
 
   const isEmpty = (scales?.length || 0) === 0 && (subjects?.length || 0) === 0;

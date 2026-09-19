@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import CommentsEntryClient from '@/components/CommentsEntryClient';
+
+const admin = createAdminClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 export default async function CommentsPage({ params }: { params: Promise<{ termId: string; sectionId: string; studentId: string }> }) {
   const { termId, sectionId, studentId } = await params;
@@ -11,13 +18,13 @@ export default async function CommentsPage({ params }: { params: Promise<{ termI
   const schoolId = profile!.school_id;
 
   const [{ data: student }, { data: term }, { data: existing }, { data: presets }, { data: scores }, { data: settings }] = await Promise.all([
-    supabase.from('students').select('*').eq('id', studentId).eq('school_id', schoolId).maybeSingle(),
-    supabase.from('terms').select('*, sessions(name)').eq('id', termId).maybeSingle(),
-    supabase.from('student_behavior').select('*').eq('student_id', studentId).eq('term_id', termId).maybeSingle(),
-    supabase.from('comment_presets').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
-    supabase.from('score_sessions').select('id, student_scores!inner(total_score, is_absent)')
+    admin.from('students').select('*').eq('id', studentId).eq('school_id', schoolId).maybeSingle(),
+    admin.from('terms').select('*, sessions(name)').eq('id', termId).maybeSingle(),
+    admin.from('student_behavior').select('*').eq('student_id', studentId).eq('term_id', termId).maybeSingle(),
+    admin.from('comment_presets').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+    admin.from('score_sessions').select('id, student_scores!inner(total_score, is_absent)')
       .eq('school_id', schoolId).eq('term_id', termId),
-    supabase.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
+    admin.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
   ]);
 
   if (!student || !term) notFound();
