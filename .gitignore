@@ -11,3 +11,4 @@ coverage/
 .idea/
 supabase/.branches
 supabase/.temp
+tsconfig.tsbuildinfo
