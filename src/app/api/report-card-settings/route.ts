@@ -97,6 +97,13 @@ export async function PATCH(req: NextRequest) {
     if (seed) {
       const { error } = await admin.rpc('seed_default_behavior_traits', { p_school_id: schoolId });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+      const [{ data: affective }, { data: psychomotor }, { data: comments }] = await Promise.all([
+        admin.from('affective_traits').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+        admin.from('psychomotor_skills').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+        admin.from('comment_presets').select('*').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+      ]);
+      return NextResponse.json({ success: true, affective: affective || [], psychomotor: psychomotor || [], comments: comments || [] });
     }
 
     return NextResponse.json({ success: true });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Settings, Award, Heart, MessageSquare, Loader2, Plus, Trash2,
   CheckCircle2, AlertCircle, Sparkles, Save,
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export default function ReportCardSettingsClient({ schoolId, initialSettings, initialAffective, initialPsychomotor, initialComments }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<'toggles' | 'affective' | 'psychomotor' | 'comments'>('toggles');
   const [settings, setSettings] = useState(initialSettings || {});
   const [affective, setAffective] = useState(initialAffective);
@@ -76,8 +78,11 @@ export default function ReportCardSettingsClient({ schoolId, initialSettings, in
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      setAffective(data.affective || []);
+      setPsychomotor(data.psychomotor || []);
+      setComments(data.comments || []);
+      router.refresh();
       showToast('success', 'Defaults added');
-      window.location.reload();
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : 'Seed failed');
     } finally {
