@@ -199,12 +199,12 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
       email: school?.email || 'info@sampleschool.com',
       logo_url: logoUrl || school?.logo_url || null,
       motto: headerMotto || school?.motto || 'Knowledge is Power',
-      principal_name: principalName || null,
+      principal_name: principalName || undefined,
       principal_signature_url: principalSignatureUrl,
       stamp_url: stampUrl,
     },
     student: {
-      first_name: 'Ada', middle_name: null, last_name: 'Okafor',
+      first_name: 'Ada', last_name: 'Okafor',
       admission_number: 'SCH/25/0001', photo_url: null, gender: 'female',
       date_of_birth: '2012-05-14', house: 'Red House',
     },
@@ -231,7 +231,7 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
       { grade: 'F9', min: 0, max: 39.99, remark: 'Fail' },
     ],
     settings: { ...toggles, template_key: templateKey, next_term_fees: nextTermFees || null },
-    color: { primary: previewColor?.primary || '#4F46E5', accent: previewColor?.accent || null },
+    color: { primary: previewColor?.primary || '#4F46E5', accent: previewColor?.accent || undefined },
   }), [school, logoUrl, stampUrl, principalSignatureUrl, principalName, headerMotto, footerNote, nextTermBegins, nextTermFees, toggles, templateKey, previewClassLevel, previewColor]);
 
   return (

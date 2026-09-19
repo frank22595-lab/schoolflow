@@ -1,16 +1,14 @@
 import ModernMinimalTemplate from './ModernMinimalTemplate';
-import type { ReportTemplateProps } from './ModernMinimalTemplate';
+import ClassicNigerianTemplate from './ClassicNigerianTemplate';
+import type { ReportTemplateProps } from './types';
 
 // Template registry — keyed by report_card_settings.template_key.
-// All 5 keys point at the placeholder for now. When a real template lands in this
-// folder (e.g. ClassicNigerianTemplate.tsx), just import it and swap its entry here;
-// every call site (designer preview, individual report page) picks it up automatically.
 export const REPORT_TEMPLATES: Record<string, React.ComponentType<ReportTemplateProps>> = {
-  'classic-nigerian': ModernMinimalTemplate,
+  'classic-nigerian': ClassicNigerianTemplate,
   'modern-minimal': ModernMinimalTemplate,
-  'executive': ModernMinimalTemplate,
-  'compact-grid': ModernMinimalTemplate,
-  'warm-academic': ModernMinimalTemplate,
+  'executive': ModernMinimalTemplate,      // placeholder until Batch 2
+  'compact-grid': ModernMinimalTemplate,   // placeholder until Batch 2
+  'warm-academic': ModernMinimalTemplate,  // placeholder until Batch 2
 };
 
 export const TEMPLATE_OPTIONS: Array<{ key: string; label: string; desc: string }> = [
@@ -26,4 +24,5 @@ export function getReportTemplate(templateKey: string | null | undefined) {
 }
 
 export { default as ModernMinimalTemplate } from './ModernMinimalTemplate';
-export type { ReportTemplateProps } from './ModernMinimalTemplate';
+export { default as ClassicNigerianTemplate } from './ClassicNigerianTemplate';
+export type { ReportTemplateProps } from './types';
