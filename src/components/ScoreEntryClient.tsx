@@ -22,12 +22,13 @@ const COLOR_CLASSES: Record<string, string> = {
 
 interface Props {
   scoreSession: any;
+  sectionDisplayName: string;
   assessments: any[];
   initialScores: any[];
   gradeBands: any[];
 }
 
-export default function ScoreEntryClient({ scoreSession, assessments, initialScores, gradeBands }: Props) {
+export default function ScoreEntryClient({ scoreSession, sectionDisplayName, assessments, initialScores, gradeBands }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const [scores, setScores] = useState(initialScores);
@@ -158,7 +159,7 @@ export default function ScoreEntryClient({ scoreSession, assessments, initialSco
     }
   }
 
-  const className = scoreSession.sections?.full_name || scoreSession.sections?.name || 'Class';
+  const className = sectionDisplayName || 'Class';
   const subjectName = scoreSession.subjects?.name || 'Subject';
   const termName = scoreSession.terms?.name || '';
 

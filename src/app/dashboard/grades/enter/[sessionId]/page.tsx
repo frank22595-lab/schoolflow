@@ -18,12 +18,24 @@ export default async function ScoreEntryPage({ params }: { params: Promise<{ ses
 
   const { data: scoreSession } = await admin
     .from('score_sessions')
-    .select('*, sections(name, full_name, classes(class_levels(name))), subjects(name, code), terms(name, sessions(name))')
+    .select('*, sections(name, full_name, classes(class_level_id, class_levels(name))), subjects(name, code), terms(name, sessions(name))')
     .eq('id', sessionId)
     .eq('school_id', profile!.school_id)
     .maybeSingle();
 
   if (!scoreSession) notFound();
+
+  // Hide the arm letter for classes with only one section (see sectionDisplayName in TermDashboardClient)
+  const classLevelId = scoreSession.sections?.classes?.class_level_id;
+  const { data: siblingSections } = classLevelId
+    ? await admin.from('sections').select('id, classes!inner(class_level_id)')
+        .eq('school_id', profile!.school_id).eq('classes.class_level_id', classLevelId)
+    : { data: null };
+  const siblingCount = siblingSections?.length ?? 1;
+  const className = scoreSession.sections?.classes?.class_levels?.name || scoreSession.sections?.full_name || scoreSession.sections?.name;
+  const sectionDisplayName = siblingCount <= 1
+    ? className
+    : (scoreSession.sections?.full_name || `${className} ${scoreSession.sections?.name}`);
 
   const [{ data: assessments }, { data: scores }, { data: bands }] = await Promise.all([
     admin.from('assessment_types').select('*').eq('school_id', profile!.school_id).eq('is_active', true).order('sequence'),
@@ -57,6 +69,7 @@ export default async function ScoreEntryPage({ params }: { params: Promise<{ ses
 
       <ScoreEntryClient
         scoreSession={scoreSession}
+        sectionDisplayName={sectionDisplayName}
         assessments={assessments || []}
         initialScores={sortedScores}
         gradeBands={bands || []}

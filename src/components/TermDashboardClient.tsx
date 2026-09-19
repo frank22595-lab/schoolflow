@@ -21,6 +21,16 @@ interface Props {
   settings: any;
 }
 
+// Hides the arm letter (e.g. "A") for classes that only have one section, so single-arm
+// classes read as "Primary 2" instead of "Primary 2 A"; multi-arm classes still show "JSS 1 A".
+function sectionDisplayName(section: any, allSections: any[]): string {
+  const classLevelId = section.classes?.class_level_id;
+  const className = section.classes?.class_levels?.name || section.full_name || section.name;
+  const siblingCount = allSections.filter(s => s.classes?.class_level_id === classLevelId).length;
+  if (siblingCount <= 1) return className;
+  return section.full_name || `${className} ${section.name}`;
+}
+
 export default function TermDashboardClient({ schoolId, term, sections, classSubjects, subjects, scoreSessions, enrollments, behaviors, settings }: Props) {
   const router = useRouter();
   const [scoresDrawer, setScoresDrawer] = useState<string | null>(null);
@@ -194,7 +204,7 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
               className="p-3 rounded-xl border-2 border-gray-200 hover:border-indigo hover:bg-indigo-50 text-left transition-all group">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-gray-900 text-sm truncate">{st.section.full_name || st.section.name}</div>
+                  <div className="font-semibold text-gray-900 text-sm truncate">{sectionDisplayName(st.section, sections)}</div>
                   <div className="text-[11px] text-gray-500 mt-0.5">{st.studentCount} students · {st.totalSubjects} subjects</div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo flex-shrink-0" />
@@ -221,7 +231,7 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
                 className="p-3 rounded-xl border-2 border-gray-200 hover:border-error hover:bg-red-50 text-left transition-all group">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-gray-900 text-sm truncate">{st.section.full_name || st.section.name}</div>
+                    <div className="font-semibold text-gray-900 text-sm truncate">{sectionDisplayName(st.section, sections)}</div>
                     <div className="text-[11px] text-gray-500 mt-0.5">{st.behaviorDone}/{st.studentCount} rated</div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-error flex-shrink-0" />
@@ -242,7 +252,7 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
                 className="p-3 rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 text-left transition-all group">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-gray-900 text-sm truncate">{st.section.full_name || st.section.name}</div>
+                    <div className="font-semibold text-gray-900 text-sm truncate">{sectionDisplayName(st.section, sections)}</div>
                     <div className="text-[11px] text-gray-500 mt-0.5">{st.studentCount} students</div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-600 flex-shrink-0" />
