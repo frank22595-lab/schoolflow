@@ -266,8 +266,17 @@ export default function TermDashboardClient({ schoolId, term, sections, classSub
       {/* SECTION 4: Report Cards */}
       <DashboardCard icon={FileText} iconColor="text-emerald-600" iconBg="bg-emerald-50"
         title="Report Cards" desc="View broadsheet, print or download reports">
-        <div className="p-4 bg-gray-50 rounded-lg text-center">
-          <p className="text-sm text-gray-500">Report card generation ships in <strong>Drop 13B</strong> — right after this works.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {sectionStats.map(st => (
+            <Link key={st.section.id} href={`/dashboard/grades/report/${term.id}/${st.section.id}`}
+              className="p-3 rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 text-left transition-all group flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-gray-900 text-sm truncate">{sectionDisplayName(st.section, sections)}</div>
+                <div className="text-[11px] text-gray-500 mt-0.5">{st.studentCount} students</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-600 flex-shrink-0" />
+            </Link>
+          ))}
         </div>
       </DashboardCard>
 

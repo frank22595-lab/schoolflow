@@ -8,8 +8,7 @@ export default async function ReportCardSettingsPage() {
   const { data: profile } = await supabase.from('users').select('school_id').eq('id', user!.id).single();
   const schoolId = profile!.school_id;
 
-  const [{ data: settings }, { data: affective }, { data: psychomotor }, { data: comments }] = await Promise.all([
-    supabase.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
+  const [{ data: affective }, { data: psychomotor }, { data: comments }] = await Promise.all([
     supabase.from('affective_traits').select('*').eq('school_id', schoolId).order('sequence'),
     supabase.from('psychomotor_skills').select('*').eq('school_id', schoolId).order('sequence'),
     supabase.from('comment_presets').select('*').eq('school_id', schoolId).order('sequence'),
@@ -25,13 +24,12 @@ export default async function ReportCardSettingsPage() {
           <span className="text-gray-300">/</span>
           <span>Report Card</span>
         </div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Report card configuration</h1>
-        <p className="text-gray-500 mt-1 text-sm">Choose what appears on printed report cards</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Behavior traits & comments</h1>
+        <p className="text-gray-500 mt-1 text-sm">Configure the traits, skills, and preset comments used on report cards</p>
       </div>
 
       <ReportCardSettingsClient
         schoolId={schoolId}
-        initialSettings={settings}
         initialAffective={affective || []}
         initialPsychomotor={psychomotor || []}
         initialComments={comments || []}

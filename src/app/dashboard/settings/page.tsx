@@ -88,6 +88,16 @@ export default async function SettingsPage() {
           iconBg: 'bg-sky-50',
           iconColor: 'text-info',
         },
+        {
+          href: '/dashboard/settings/report-cards',
+          icon: Palette,
+          title: 'Report Card Designer',
+          desc: 'Template, branding, class colors, and what appears on printed reports',
+          done: false,
+          accent: 'from-purple-500 to-purple-600',
+          iconBg: 'bg-purple-50',
+          iconColor: 'text-purple-600',
+        },
       ],
     },
     {

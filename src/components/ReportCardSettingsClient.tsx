@@ -2,43 +2,22 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  Settings, Award, Heart, MessageSquare, Loader2, Plus, Trash2,
-  CheckCircle2, AlertCircle, Sparkles, Save,
+  Award, Heart, MessageSquare, Loader2, Plus, Trash2,
+  CheckCircle2, AlertCircle, Sparkles, Save, Palette, ArrowRight,
 } from 'lucide-react';
-
-const TOGGLES = [
-  { key: 'show_class_position',       label: 'Class position',       desc: '1st, 2nd, 3rd of N in class' },
-  { key: 'show_subject_position',     label: 'Subject position',     desc: '1st in Maths, 3rd in English' },
-  { key: 'show_cumulative_average',   label: 'Cumulative average',   desc: 'Running average across terms' },
-  { key: 'show_class_average',        label: 'Class average',        desc: 'Average for each subject' },
-  { key: 'show_highest_lowest',       label: 'Highest & Lowest',     desc: 'Best and worst per subject' },
-  { key: 'show_gpa',                  label: 'GPA',                  desc: 'Grade Point Average' },
-  { key: 'show_attendance',           label: 'Attendance summary',   desc: 'Days present/absent/late' },
-  { key: 'show_affective',            label: 'Affective domain',     desc: 'Behavior traits (Punctuality etc)' },
-  { key: 'show_psychomotor',          label: 'Psychomotor skills',   desc: 'Skills (Handwriting, Games etc)' },
-  { key: 'show_teacher_comment',      label: 'Teacher comment',      desc: 'Class teacher\'s remark' },
-  { key: 'show_principal_comment',    label: 'Principal comment',    desc: 'Principal / Head teacher remark' },
-  { key: 'show_next_term_dates',      label: 'Next term dates',      desc: 'When next term begins' },
-  { key: 'show_fees_notice',          label: 'Fees notice',          desc: 'School fees for next term' },
-  { key: 'show_signatures',           label: 'Signature lines',      desc: 'Teacher & Principal signatures' },
-  { key: 'show_stamp_area',           label: 'School stamp area',    desc: 'Space for official stamp' },
-  { key: 'show_logo',                 label: 'School logo',          desc: 'Show logo at header' },
-  { key: 'show_motto',                label: 'School motto',         desc: 'Show motto at header' },
-];
 
 interface Props {
   schoolId: string;
-  initialSettings: any;
   initialAffective: any[];
   initialPsychomotor: any[];
   initialComments: any[];
 }
 
-export default function ReportCardSettingsClient({ schoolId, initialSettings, initialAffective, initialPsychomotor, initialComments }: Props) {
+export default function ReportCardSettingsClient({ schoolId, initialAffective, initialPsychomotor, initialComments }: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<'toggles' | 'affective' | 'psychomotor' | 'comments'>('toggles');
-  const [settings, setSettings] = useState(initialSettings || {});
+  const [tab, setTab] = useState<'affective' | 'psychomotor' | 'comments'>('affective');
   const [affective, setAffective] = useState(initialAffective);
   const [psychomotor, setPsychomotor] = useState(initialPsychomotor);
   const [comments, setComments] = useState(initialComments);
@@ -56,7 +35,7 @@ export default function ReportCardSettingsClient({ schoolId, initialSettings, in
     try {
       const res = await fetch('/api/report-card-settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schoolId, settings, affective, psychomotor, comments }),
+        body: JSON.stringify({ schoolId, affective, psychomotor, comments }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -109,11 +88,25 @@ export default function ReportCardSettingsClient({ schoolId, initialSettings, in
         </div>
       )}
 
+      {/* Link to the full Report Card Designer */}
+      <Link href="/dashboard/settings/report-cards"
+        className="flex items-center justify-between gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4 hover:shadow-md transition-shadow group">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 bg-indigo rounded-lg flex items-center justify-center flex-shrink-0">
+            <Palette className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 text-sm">Report Card Designer</h3>
+            <p className="text-xs text-gray-600 mt-0.5">Template, branding, class colors, and what appears on printed reports</p>
+          </div>
+        </div>
+        <ArrowRight className="w-4 h-4 text-indigo group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+      </Link>
+
       {/* Tabs */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-100 overflow-x-auto">
           {[
-            { id: 'toggles', label: 'What to show', icon: Settings },
             { id: 'affective', label: 'Behavior traits', icon: Heart, count: affective.length },
             { id: 'psychomotor', label: 'Skills', icon: Award, count: psychomotor.length },
             { id: 'comments', label: 'Comment presets', icon: MessageSquare, count: comments.length },
@@ -129,54 +122,6 @@ export default function ReportCardSettingsClient({ schoolId, initialSettings, in
           ))}
         </div>
       </div>
-
-      {tab === 'toggles' && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 lg:p-6 space-y-3">
-          <div>
-            <h3 className="font-semibold text-gray-900">Report card sections</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Toggle what appears on printed reports</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {TOGGLES.map(t => (
-              <label key={t.key} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                <input type="checkbox" className="mt-0.5 accent-indigo"
-                  checked={settings[t.key] ?? true}
-                  onChange={(e) => setSettings({ ...settings, [t.key]: e.target.checked })} />
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900">{t.label}</div>
-                  <div className="text-[11px] text-gray-500 mt-0.5">{t.desc}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-
-          <div className="pt-3 border-t border-gray-100 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="label">Next term begins</label>
-                <input type="date" className="input" value={settings.next_term_begins || ''}
-                  onChange={(e) => setSettings({ ...settings, next_term_begins: e.target.value })} />
-              </div>
-              <div>
-                <label className="label">Next term fees (₦)</label>
-                <input type="number" className="input" value={settings.next_term_fees || ''}
-                  onChange={(e) => setSettings({ ...settings, next_term_fees: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <label className="label">Principal's name</label>
-              <input type="text" className="input" value={settings.principal_name || ''}
-                onChange={(e) => setSettings({ ...settings, principal_name: e.target.value })} />
-            </div>
-            <div>
-              <label className="label">Footer note (appears at bottom of report)</label>
-              <input type="text" className="input" placeholder="e.g. This result is only valid with school stamp"
-                value={settings.footer_note || ''}
-                onChange={(e) => setSettings({ ...settings, footer_note: e.target.value })} />
-            </div>
-          </div>
-        </div>
-      )}
 
       {tab === 'affective' && (
         <ListEditor title="Behavior traits (Affective domain)"

@@ -4,10 +4,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { compressImageToDataUrl } from '@/lib/compressImage';
 import {
   User, Heart, MapPin, GraduationCap, Users as UsersIcon,
   Loader2, AlertCircle, Save, Plus, Info, Search, X,
-  Phone, UserCheck,
+  Phone, UserCheck, Camera,
 } from 'lucide-react';
 
 const NIGERIAN_STATES = [
@@ -70,6 +71,13 @@ export default function AddStudentForm({
   const [classes, setClasses] = useState(initialClasses);
 
   const [armChoice, setArmChoice] = useState<'none' | string>('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  function handlePhotoChange(file: File | null) {
+    setPhotoFile(file);
+    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+  }
 
   const year = new Date().getFullYear().toString().slice(-2);
   const defaultAdmission = `${schoolShortCode}/${year}/${String(Math.floor(Math.random() * 9000) + 1000)}`;
@@ -331,6 +339,19 @@ export default function AddStudentForm({
 
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to add student');
+
+      if (photoFile) {
+        try {
+          const dataUrl = await compressImageToDataUrl(photoFile);
+          await fetch('/api/reports/upload-photo', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ schoolId, studentId: result.studentId, dataUrl }),
+          });
+        } catch {
+          // Non-fatal — student was created successfully; photo can be added later from Edit.
+        }
+      }
+
       router.push(`/dashboard/students/${result.studentId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
@@ -368,6 +389,24 @@ export default function AddStudentForm({
 
       {/* BASIC */}
       <FormCard icon={User} iconColor="text-indigo" iconBg="bg-indigo-50" title="Basic information" desc="Names and admission details">
+        <div className="flex items-center gap-4">
+          <div className="w-[80px] h-[100px] rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {photoPreview ? (
+              <img src={photoPreview} alt="Student preview" className="w-full h-full object-cover" />
+            ) : (
+              <Camera className="w-6 h-6 text-gray-300" />
+            )}
+          </div>
+          <div>
+            <label className="label">Student photo</label>
+            <label className="btn-secondary text-sm cursor-pointer inline-flex">
+              {photoPreview ? 'Change photo' : 'Upload photo'}
+              <input type="file" accept="image/*" className="hidden"
+                onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)} />
+            </label>
+            <p className="text-[11px] text-gray-500 mt-1">Compressed automatically before upload</p>
+          </div>
+        </div>
         <div>
           <label className="label">Admission number *</label>
           <input type="text" required className="input font-mono text-sm"

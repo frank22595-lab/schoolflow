@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   User, Heart, MapPin, Loader2, AlertCircle, Save,
-  GraduationCap, ArrowRightLeft, Info, CheckCircle2, ArrowRight,
+  GraduationCap, ArrowRightLeft, Info, CheckCircle2, ArrowRight, Camera,
 } from 'lucide-react';
 import DeleteConfirm from './DeleteConfirm';
+import { compressImageToDataUrl } from '@/lib/compressImage';
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -32,6 +33,28 @@ export default function EditStudentForm({ student, houses, sections, classes, cl
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(student.photo_url || null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  async function handlePhotoChange(file: File | null) {
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      const res = await fetch('/api/reports/upload-photo', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: student.school_id, studentId: student.id, dataUrl }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setPhotoUrl(result.url);
+      showToast('success', 'Photo updated');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Photo upload failed');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   // Current class info
   const currentClassLevelId = currentEnrollment?.sections?.classes?.class_level_id || '';
@@ -176,6 +199,24 @@ export default function EditStudentForm({ student, houses, sections, classes, cl
     <form onSubmit={handleSubmit} className="space-y-6 pb-24 lg:pb-8">
       {/* Basic */}
       <FormCard icon={User} iconColor="text-indigo" iconBg="bg-indigo-50" title="Basic information" desc="Names and admission">
+        <div className="flex items-center gap-4">
+          <div className="w-[80px] h-[100px] rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {photoUrl ? (
+              <img src={photoUrl} alt="Student" className="w-full h-full object-cover" />
+            ) : (
+              <Camera className="w-6 h-6 text-gray-300" />
+            )}
+          </div>
+          <div>
+            <label className="label">Student photo</label>
+            <label className="btn-secondary text-sm cursor-pointer inline-flex">
+              {uploadingPhoto ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Uploading...</> : (photoUrl ? 'Replace photo' : 'Upload photo')}
+              <input type="file" accept="image/*" className="hidden" disabled={uploadingPhoto}
+                onChange={(e) => handlePhotoChange(e.target.files?.[0] || null)} />
+            </label>
+            <p className="text-[11px] text-gray-500 mt-1">Compressed automatically before upload</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">Admission number *</label>
