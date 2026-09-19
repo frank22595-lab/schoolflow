@@ -7,7 +7,7 @@ export default function ExecutiveTemplate({
   attendance, cumulative, grade_scale, settings, color,
 }: ReportTemplateProps) {
   const primary = color?.primary || '#1a1a1a';
-  const accent = color?.accent || '#b8860b'; // Gold accent
+  const accent = color?.accent || '#b8860b';
   const initials = `${student.first_name?.[0] || ''}${student.last_name?.[0] || ''}`.toUpperCase();
   const fullName = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ').toUpperCase();
 
@@ -20,86 +20,86 @@ export default function ExecutiveTemplate({
     <div className="ex-page" style={{ '--primary': primary, '--accent': accent } as any}>
       <style>{`
         .ex-page {
-          width: 210mm; min-height: 297mm; margin: 0 auto; background: #fefefe;
-          padding: 12mm 14mm; box-sizing: border-box;
-          font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif; color: #1a1a1a;
-          font-size: 10.5px; line-height: 1.4;
+          width: 210mm; height: 297mm; margin: 0 auto; background: #fefefe;
+          padding: 8mm 10mm; box-sizing: border-box;
+          font-family: 'Cormorant Garamond', Georgia, serif; color: #1a1a1a;
+          font-size: 9.5px; line-height: 1.25;
           display: flex; flex-direction: column;
-          position: relative;
+          position: relative; overflow: hidden;
         }
         .ex-page * { box-sizing: border-box; }
         .ex-page::before {
-          content: ''; position: absolute; top: 6mm; left: 6mm; right: 6mm; bottom: 6mm;
+          content: ''; position: absolute; top: 4mm; left: 4mm; right: 4mm; bottom: 4mm;
           border: 1px solid var(--accent); pointer-events: none;
         }
         .ex-page::after {
-          content: ''; position: absolute; top: 7mm; left: 7mm; right: 7mm; bottom: 7mm;
-          border: 3px double var(--accent); pointer-events: none;
+          content: ''; position: absolute; top: 5mm; left: 5mm; right: 5mm; bottom: 5mm;
+          border: 2px double var(--accent); pointer-events: none;
         }
-        .ex-content { position: relative; z-index: 1; padding: 4mm; display: flex; flex-direction: column; flex: 1; }
-        .ex-header { text-align: center; padding-bottom: 8px; margin-bottom: 8px; position: relative; }
+        .ex-content { position: relative; z-index: 1; padding: 3mm; display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .ex-header { text-align: center; padding-bottom: 4px; margin-bottom: 4px; position: relative; }
         .ex-header::after { content: ''; position: absolute; left: 20%; right: 20%; bottom: 0; height: 1px; background: linear-gradient(to right, transparent, var(--accent), transparent); }
-        .ex-crest-row { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 6px; }
-        .ex-logo { width: 60px; height: 60px; border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; font-size: 22px; overflow: hidden; background: linear-gradient(135deg, #fef9e7, white); font-family: 'Playfair Display', serif; }
+        .ex-crest-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .ex-logo { width: 44px; height: 44px; border: 1.5px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 800; font-size: 18px; overflow: hidden; background: linear-gradient(135deg, #fef9e7, white); font-family: 'Playfair Display', serif; flex-shrink: 0; }
         .ex-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
-        .ex-school h1 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; color: var(--primary); letter-spacing: 4px; }
-        .ex-school p { font-size: 10px; color: #4a4a4a; margin-top: 3px; font-style: italic; letter-spacing: 0.5px; }
-        .ex-school .motto { color: var(--accent); font-size: 10px; margin-top: 3px; font-family: 'Cormorant Garamond', serif; font-style: italic; letter-spacing: 2px; font-weight: 600; }
-        .ex-title { text-align: center; padding: 6px 0; margin-bottom: 10px; }
-        .ex-title h2 { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--primary); letter-spacing: 5px; }
-        .ex-title .sub { font-size: 10px; color: var(--accent); margin-top: 3px; letter-spacing: 3px; text-transform: uppercase; font-weight: 600; }
-        .ex-top { display: grid; grid-template-columns: 100px 1fr 190px; gap: 12px; margin-bottom: 10px; padding: 10px; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); }
-        .ex-photo { width: 100px; height: 120px; border: 2px solid var(--accent); background: white; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 700; font-size: 32px; overflow: hidden; font-family: 'Playfair Display', serif; }
+        .ex-school h1 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--primary); letter-spacing: 2px; line-height: 1.1; }
+        .ex-school p { font-size: 9px; color: #4a4a4a; margin-top: 1px; font-style: italic; letter-spacing: 0.3px; }
+        .ex-school .motto { color: var(--accent); font-size: 9px; margin-top: 1px; font-style: italic; letter-spacing: 1.5px; font-weight: 600; }
+        .ex-title { text-align: center; padding: 3px 0; margin-bottom: 4px; }
+        .ex-title h2 { font-family: 'Playfair Display', serif; font-size: 12px; font-weight: 600; color: var(--primary); letter-spacing: 3px; }
+        .ex-title .sub { font-size: 9px; color: var(--accent); margin-top: 1px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+        .ex-top { display: grid; grid-template-columns: 70px 1fr 155px; gap: 8px; margin-bottom: 5px; padding: 5px; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); }
+        .ex-photo { width: 70px; height: 84px; border: 1.5px solid var(--accent); background: white; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: 700; font-size: 22px; overflow: hidden; font-family: 'Playfair Display', serif; }
         .ex-photo img { width: 100%; height: 100%; object-fit: cover; }
-        .ex-details { align-content: center; display: grid; gap: 3px; font-size: 11px; }
-        .ex-details .name { font-size: 16px; font-weight: 700; color: var(--primary); margin-bottom: 5px; font-family: 'Playfair Display', serif; letter-spacing: 1px; padding-bottom: 4px; border-bottom: 1px solid var(--accent); }
-        .ex-details .row { display: grid; grid-template-columns: 110px 1fr; }
-        .ex-details .label { color: #4a4a4a; font-weight: 600; font-family: 'Cormorant Garamond', serif; font-style: italic; letter-spacing: 0.5px; }
+        .ex-details { align-content: center; display: grid; gap: 2px; font-size: 9.5px; }
+        .ex-details .name { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 2px; font-family: 'Playfair Display', serif; letter-spacing: 0.8px; padding-bottom: 2px; border-bottom: 1px solid var(--accent); }
+        .ex-details .row { display: grid; grid-template-columns: 95px 1fr; gap: 4px; }
+        .ex-details .label { color: #4a4a4a; font-weight: 600; font-style: italic; }
         .ex-details .value { color: var(--primary); font-weight: 600; }
-        .ex-att-panel { border: 1px solid var(--accent); padding: 6px; background: linear-gradient(135deg, white, #fef9e7); }
-        .ex-att-title { text-align: center; font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; padding-bottom: 4px; border-bottom: 1px solid var(--accent); margin-bottom: 5px; font-family: 'Playfair Display', serif; }
-        .ex-att-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
-        .ex-att-cell { text-align: center; padding: 2px; }
-        .ex-att-cell .num { font-size: 14px; font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; }
-        .ex-att-cell .lbl { font-size: 8px; color: #4a4a4a; letter-spacing: 0.5px; text-transform: uppercase; font-family: 'Cormorant Garamond', serif; font-style: italic; }
-        .ex-section-hd { text-align: center; margin: 8px 0 4px; padding: 5px 0; font-family: 'Playfair Display', serif; font-size: 11px; font-weight: 700; color: var(--primary); letter-spacing: 3px; text-transform: uppercase; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); }
-        .ex-table { width: 100%; border-collapse: collapse; font-size: 10px; font-family: 'Cormorant Garamond', serif; }
-        .ex-table thead th { background: var(--primary); color: #fef9e7; padding: 5px 4px; text-align: center; font-weight: 600; font-size: 10px; letter-spacing: 0.5px; font-family: 'Playfair Display', serif; text-transform: uppercase; }
-        .ex-table thead th:first-child { text-align: left; padding-left: 8px; }
-        .ex-table tbody td { padding: 4px; text-align: center; border-bottom: 1px solid #e5e0d0; }
-        .ex-table tbody td:first-child { text-align: left; padding-left: 8px; font-weight: 600; }
+        .ex-att-panel { border: 1px solid var(--accent); padding: 4px; background: linear-gradient(135deg, white, #fef9e7); }
+        .ex-att-title { text-align: center; font-size: 8.5px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 2px; border-bottom: 1px solid var(--accent); margin-bottom: 3px; font-family: 'Playfair Display', serif; }
+        .ex-att-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; }
+        .ex-att-cell { text-align: center; }
+        .ex-att-cell .num { font-size: 12px; font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; line-height: 1; }
+        .ex-att-cell .lbl { font-size: 7.5px; color: #4a4a4a; letter-spacing: 0.3px; text-transform: uppercase; font-style: italic; }
+        .ex-section-hd { text-align: center; margin: 4px 0 2px; padding: 3px 0; font-family: 'Playfair Display', serif; font-size: 9.5px; font-weight: 700; color: var(--primary); letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); }
+        .ex-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .ex-table thead th { background: var(--primary); color: #fef9e7; padding: 3px; text-align: center; font-weight: 600; font-size: 8.5px; letter-spacing: 0.3px; font-family: 'Playfair Display', serif; text-transform: uppercase; line-height: 1.1; }
+        .ex-table thead th:first-child { text-align: left; padding-left: 6px; }
+        .ex-table tbody td { padding: 2.5px 3px; text-align: center; border-bottom: 1px solid #e5e0d0; line-height: 1.2; }
+        .ex-table tbody td:first-child { text-align: left; padding-left: 6px; font-weight: 600; }
         .ex-table tbody tr:nth-child(even) { background: #fefaf0; }
-        .ex-grade { display: inline-block; padding: 1px 6px; border: 1px solid var(--accent); font-weight: 700; font-size: 10px; color: var(--primary); background: linear-gradient(135deg, white, #fef9e7); font-family: 'Playfair Display', serif; }
+        .ex-grade { display: inline-block; padding: 0px 4px; border: 1px solid var(--accent); font-weight: 700; font-size: 8.5px; color: var(--primary); background: linear-gradient(135deg, white, #fef9e7); font-family: 'Playfair Display', serif; }
         .ex-grade.fail { color: #7f1d1d; border-color: #7f1d1d; }
-        .ex-table tfoot td { background: linear-gradient(to right, #fef9e7, white, #fef9e7); padding: 6px 4px; font-weight: 700; border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); font-size: 11px; color: var(--primary); font-family: 'Playfair Display', serif; }
-        .ex-mid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-top: 8px; }
-        .ex-cum-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-        .ex-cum-table th, .ex-cum-table td { padding: 4px; text-align: center; border: 1px solid var(--accent); font-family: 'Cormorant Garamond', serif; }
-        .ex-cum-table th { background: var(--primary); color: #fef9e7; font-weight: 600; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; font-family: 'Playfair Display', serif; }
+        .ex-table tfoot td { background: linear-gradient(to right, #fef9e7, white, #fef9e7); padding: 4px 3px; font-weight: 700; border-top: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent); font-size: 9.5px; color: var(--primary); font-family: 'Playfair Display', serif; }
+        .ex-mid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; margin-top: 4px; }
+        .ex-cum-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .ex-cum-table th, .ex-cum-table td { padding: 3px; text-align: center; border: 1px solid var(--accent); line-height: 1.1; }
+        .ex-cum-table th { background: var(--primary); color: #fef9e7; font-weight: 600; font-size: 8px; letter-spacing: 0.5px; text-transform: uppercase; font-family: 'Playfair Display', serif; }
         .ex-cum-table td.current { background: #fef9e7; color: var(--primary); font-weight: 700; }
-        .ex-summary-box { border: 2px double var(--accent); padding: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; background: linear-gradient(135deg, white, #fef9e7); }
-        .ex-summary-box .lbl { font-size: 9px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; font-family: 'Cormorant Garamond', serif; font-style: italic; }
-        .ex-summary-box .val { font-size: 17px; font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; letter-spacing: 1px; }
-        .ex-behavior { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .ex-behavior h4 { font-size: 10px; color: var(--primary); font-weight: 700; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; text-align: center; padding-bottom: 3px; border-bottom: 1px solid var(--accent); font-family: 'Playfair Display', serif; }
-        .ex-trait { display: flex; justify-content: space-between; align-items: center; padding: 2px 6px; font-size: 10.5px; border-bottom: 1px dotted #d1cba8; font-family: 'Cormorant Garamond', serif; }
-        .ex-stars { color: var(--accent); font-size: 12px; letter-spacing: 1px; line-height: 1; font-family: sans-serif; }
-        .ex-comments { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .ex-comment { padding: 10px; border: 1px solid var(--accent); background: linear-gradient(135deg, white, #fefaf0); font-size: 11px; position: relative; min-height: 70px; font-family: 'Cormorant Garamond', serif; }
-        .ex-comment .label { font-size: 9px; color: var(--accent); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; padding-bottom: 3px; border-bottom: 1px solid var(--accent); font-family: 'Playfair Display', serif; }
-        .ex-comment .text { color: #1a1a1a; font-style: italic; line-height: 1.4; margin-bottom: 6px; }
-        .ex-comment .sig-row { border-top: 1px dotted var(--accent); padding-top: 4px; text-align: right; font-size: 9px; color: #4a4a4a; font-family: 'Cormorant Garamond', serif; font-style: italic; }
-        .ex-comment .sig-row strong { color: var(--primary); font-family: 'Playfair Display', serif; font-size: 11px; letter-spacing: 0.5px; }
-        .ex-sig-img { max-height: 24px; max-width: 80px; }
-        .ex-stamp { position: absolute; right: 10px; bottom: 10px; width: 65px; height: 65px; opacity: 0.55; }
+        .ex-summary-box { border: 1.5px double var(--accent); padding: 4px 6px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center; background: linear-gradient(135deg, white, #fef9e7); }
+        .ex-summary-box .lbl { font-size: 8px; color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase; font-style: italic; }
+        .ex-summary-box .val { font-size: 14px; font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; letter-spacing: 0.5px; line-height: 1.1; }
+        .ex-behavior { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .ex-behavior h4 { font-size: 8.5px; color: var(--primary); font-weight: 700; margin-bottom: 2px; letter-spacing: 0.7px; text-transform: uppercase; text-align: center; padding-bottom: 2px; border-bottom: 1px solid var(--accent); font-family: 'Playfair Display', serif; }
+        .ex-trait { display: flex; justify-content: space-between; align-items: center; padding: 1.5px 4px; font-size: 9.5px; border-bottom: 1px dotted #d1cba8; line-height: 1.2; }
+        .ex-stars { color: var(--accent); font-size: 10px; letter-spacing: 0.5px; line-height: 1; font-family: sans-serif; }
+        .ex-comments { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .ex-comment { padding: 6px; border: 1px solid var(--accent); background: linear-gradient(135deg, white, #fefaf0); font-size: 10px; position: relative; }
+        .ex-comment .label { font-size: 8.5px; color: var(--accent); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; padding-bottom: 2px; border-bottom: 1px solid var(--accent); font-family: 'Playfair Display', serif; }
+        .ex-comment .text { color: #1a1a1a; font-style: italic; line-height: 1.3; margin-bottom: 4px; }
+        .ex-comment .sig-row { border-top: 1px dotted var(--accent); padding-top: 2px; text-align: right; font-size: 8.5px; color: #4a4a4a; font-style: italic; }
+        .ex-comment .sig-row strong { color: var(--primary); font-family: 'Playfair Display', serif; font-size: 10px; letter-spacing: 0.3px; }
+        .ex-sig-img { max-height: 20px; max-width: 65px; }
+        .ex-stamp { position: absolute; right: 6px; bottom: 6px; width: 48px; height: 48px; opacity: 0.5; }
         .ex-stamp img { width: 100%; height: 100%; object-fit: contain; }
-        .ex-footer { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--accent); }
-        .ex-scale { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 6px; font-size: 9.5px; font-family: 'Cormorant Garamond', serif; }
-        .ex-scale-item { padding: 2px 7px; border: 1px solid var(--accent); color: #4a4a4a; background: white; }
+        .ex-footer { margin-top: auto; padding-top: 4px; border-top: 1px solid var(--accent); }
+        .ex-scale { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin-bottom: 3px; font-size: 8.5px; }
+        .ex-scale-item { padding: 1px 5px; border: 1px solid var(--accent); color: #4a4a4a; background: white; }
         .ex-scale-item strong { color: var(--primary); font-family: 'Playfair Display', serif; }
-        .ex-ft-text { text-align: center; font-size: 10px; color: #4a4a4a; font-family: 'Cormorant Garamond', serif; font-style: italic; }
-        .ex-ft-text .next { font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; letter-spacing: 2px; font-style: normal; }
-        .ex-ft-text .brand { font-size: 8px; color: #a0a0a0; margin-top: 4px; letter-spacing: 1px; }
+        .ex-ft-text { text-align: center; font-size: 9px; color: #4a4a4a; font-style: italic; }
+        .ex-ft-text .next { font-weight: 700; color: var(--primary); font-family: 'Playfair Display', serif; letter-spacing: 1px; font-style: normal; }
+        .ex-ft-text .brand { font-size: 7.5px; color: #a0a0a0; margin-top: 2px; letter-spacing: 0.5px; }
         @media print {
           body { background: white !important; }
           .ex-page { box-shadow: none !important; margin: 0 !important; }
@@ -108,7 +108,6 @@ export default function ExecutiveTemplate({
       `}</style>
 
       <div className="ex-content">
-        {/* Header */}
         <div className="ex-header">
           <div className="ex-crest-row">
             <div className="ex-logo">
@@ -122,13 +121,11 @@ export default function ExecutiveTemplate({
           </div>
         </div>
 
-        {/* Title */}
         <div className="ex-title">
           <h2>STUDENT ACADEMIC REPORT</h2>
           <div className="sub">{term.name} · {term.session_name} Session</div>
         </div>
 
-        {/* Student card */}
         <div className="ex-top">
           {settings?.show_photo !== false && (
             <div className="ex-photo">
@@ -137,13 +134,13 @@ export default function ExecutiveTemplate({
           )}
           <div className="ex-details">
             <div className="name">{fullName}</div>
-            <div className="row"><span className="label">Admission Number:</span><span className="value">{student.admission_number}</span></div>
+            <div className="row"><span className="label">Admission No:</span><span className="value">{student.admission_number}</span></div>
             <div className="row"><span className="label">Class:</span><span className="value">{section.full_name || `${section.class_level_name} ${section.name}`}</span></div>
             {student.gender && <div className="row"><span className="label">Gender:</span><span className="value">{student.gender}</span></div>}
             {student.date_of_birth && <div className="row"><span className="label">Date of Birth:</span><span className="value">{new Date(student.date_of_birth).toLocaleDateString('en-GB')}</span></div>}
             {settings?.show_house !== false && student.house && <div className="row"><span className="label">House:</span><span className="value">{student.house}</span></div>}
             {settings?.show_position !== false && summary.position_in_class && (
-              <div className="row"><span className="label">Class Position:</span><span className="value" style={{fontFamily:'Playfair Display, serif', fontSize:'12px'}}>{ordinal(summary.position_in_class)} of {summary.students_in_class}</span></div>
+              <div className="row"><span className="label">Class Position:</span><span className="value" style={{fontFamily:'Playfair Display, serif', fontSize:'11px'}}>{ordinal(summary.position_in_class)} of {summary.students_in_class}</span></div>
             )}
           </div>
           {settings?.show_attendance !== false && (
@@ -159,7 +156,6 @@ export default function ExecutiveTemplate({
           )}
         </div>
 
-        {/* Scores */}
         <div className="ex-section-hd">Academic Performance</div>
         <table className="ex-table">
           <thead>
@@ -170,8 +166,8 @@ export default function ExecutiveTemplate({
               <th>Exam<br/>(60)</th>
               <th>Total<br/>(100)</th>
               <th>Grade</th>
-              {settings?.show_subject_position !== false && <th>Position</th>}
-              {settings?.show_class_avg !== false && <th>Class Avg</th>}
+              {settings?.show_subject_position !== false && <th>Pos</th>}
+              {settings?.show_class_avg !== false && <th>Class<br/>Avg</th>}
               <th>Remark</th>
             </tr>
           </thead>
@@ -195,25 +191,21 @@ export default function ExecutiveTemplate({
           </tbody>
           <tfoot>
             <tr>
-              <td style={{ textAlign: 'left' }}>TOTAL / AVERAGE — {scores.length} SUBJECTS</td>
+              <td style={{ textAlign: 'left' }}>TOTAL — {scores.length} SUBJECTS</td>
               <td colSpan={3} style={{ textAlign: 'center' }}>{summary.total_marks} / {scores.length * 100}</td>
               <td>{summary.average?.toFixed(1)}</td>
               <td><span className="ex-grade">{summary.overall_grade || '—'}</span></td>
-              <td colSpan={(settings?.show_subject_position !== false ? 1 : 0) + (settings?.show_class_avg !== false ? 1 : 0) + 1} style={{ textAlign: 'left', paddingLeft: 8 }}>Overall Performance</td>
+              <td colSpan={(settings?.show_subject_position !== false ? 1 : 0) + (settings?.show_class_avg !== false ? 1 : 0) + 1} style={{ textAlign: 'left', paddingLeft: 6 }}>Overall Performance</td>
             </tr>
           </tfoot>
         </table>
 
-        {/* Cumulative + Summary */}
         {settings?.show_cumulative !== false && (
           <div className="ex-mid">
             <table className="ex-cum-table">
               <thead>
                 <tr>
-                  <th>1st Term</th>
-                  <th>2nd Term</th>
-                  <th>3rd Term</th>
-                  <th>Cumulative</th>
+                  <th>1st Term</th><th>2nd Term</th><th>3rd Term</th><th>Cumulative</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,15 +225,14 @@ export default function ExecutiveTemplate({
           </div>
         )}
 
-        {/* Behavior */}
         {(settings?.show_affective !== false || settings?.show_psychomotor !== false) && (behavior?.affective?.length > 0 || behavior?.psychomotor?.length > 0) && (
           <>
-            <div className="ex-section-hd">Character & Skills Assessment</div>
+            <div className="ex-section-hd">Character & Skills</div>
             <div className="ex-behavior">
               {settings?.show_affective !== false && behavior?.affective?.length > 0 && (
                 <div>
                   <h4>Affective Domain</h4>
-                  {behavior.affective.slice(0, 7).map((t, i) => (
+                  {behavior.affective.slice(0, 6).map((t, i) => (
                     <div key={i} className="ex-trait"><span>{t.name}</span><span className="ex-stars">{stars(t.rating)}</span></div>
                   ))}
                 </div>
@@ -249,7 +240,7 @@ export default function ExecutiveTemplate({
               {settings?.show_psychomotor !== false && behavior?.psychomotor?.length > 0 && (
                 <div>
                   <h4>Psychomotor Domain</h4>
-                  {behavior.psychomotor.slice(0, 7).map((t, i) => (
+                  {behavior.psychomotor.slice(0, 6).map((t, i) => (
                     <div key={i} className="ex-trait"><span>{t.name}</span><span className="ex-stars">{stars(t.rating)}</span></div>
                   ))}
                 </div>
@@ -258,7 +249,6 @@ export default function ExecutiveTemplate({
           </>
         )}
 
-        {/* Comments */}
         {(settings?.show_teacher_comment !== false || settings?.show_principal_comment !== false) && (
           <>
             <div className="ex-section-hd">Remarks</div>
@@ -285,7 +275,6 @@ export default function ExecutiveTemplate({
           </>
         )}
 
-        {/* Footer */}
         <div className="ex-footer">
           {settings?.show_grade_scale !== false && grade_scale?.length > 0 && (
             <div className="ex-scale">
