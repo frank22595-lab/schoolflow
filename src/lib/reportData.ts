@@ -8,6 +8,35 @@ interface BuildArgs {
   studentId: string;
 }
 
+// WAEC-style grade -> remark fallback, used when a score row has no grade_remark of its own
+// (e.g. the school's grade scale doesn't define per-band remarks).
+const GRADE_REMARKS: Record<string, string> = {
+  A1: 'Excellent',
+  B2: 'Very Good',
+  B3: 'Good',
+  C4: 'Credit',
+  C5: 'Credit',
+  C6: 'Credit',
+  D7: 'Pass',
+  E8: 'Pass',
+  F9: 'Fail',
+};
+
+// Looks up an assessment's value in the scores JSONB, tolerant of case/key mismatches
+// between assessment_types.short_code/name and the keys actually stored on the row.
+function lookupAssessmentScore(rawScores: Record<string, any>, shortCode: string, name: string): number | null {
+  if (rawScores[shortCode] !== undefined) return rawScores[shortCode];
+  if (rawScores[name] !== undefined) return rawScores[name];
+
+  const shortCodeLower = shortCode?.toLowerCase();
+  const nameLower = name?.toLowerCase();
+  for (const key of Object.keys(rawScores)) {
+    const keyLower = key.toLowerCase();
+    if (keyLower === shortCodeLower || keyLower === nameLower) return rawScores[key];
+  }
+  return null;
+}
+
 // Assembles everything a report-card template needs for one student, one term.
 // Used by the individual report page. Uses the admin client throughout (RLS bypass),
 // consistent with the rest of the grades pipeline.
@@ -49,7 +78,7 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
     { data: colorRow },
     { data: teacher },
     { data: allTermsInSession },
-    { data: activeEnrollments },
+    { count: studentsInClassCount },
   ] = await Promise.all([
     classLevelId
       ? admin.from('class_level_report_style').select('primary_color, accent_color').eq('school_id', schoolId).eq('class_level_id', classLevelId).maybeSingle()
@@ -58,8 +87,9 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
       ? admin.from('users').select('display_name, first_name, last_name').eq('id', (section as any).section_teacher_id).maybeSingle()
       : Promise.resolve({ data: null }),
     admin.from('terms').select('id, sequence').eq('session_id', (term as any).session_id).order('sequence'),
-    admin.from('enrollments').select('student_id', { count: 'exact', head: true })
-      .eq('section_id', sectionId).eq('session_id', (term as any).session_id).eq('status', 'active'),
+    admin.from('enrollments').select('student_id, students!inner(deleted_at)', { count: 'exact', head: true })
+      .eq('section_id', sectionId).eq('session_id', (term as any).session_id).eq('status', 'active')
+      .is('students.deleted_at', null),
   ]);
 
   // ---- Assessment columns: school-configured, in sequence order ----
@@ -79,15 +109,16 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
     const rawScores = row?.scores || {};
     const breakdowns = assessmentColumns.map((col) => ({
       name: col.name,
-      score: rawScores[col.short_code] ?? null,
+      score: lookupAssessmentScore(rawScores, col.short_code, col.name),
       max: col.max,
     }));
+    const grade = row?.grade || null;
     return {
       subject_name: ss.subjects?.name || 'Subject',
       breakdowns,
       total: row?.total_score || 0,
-      grade: row?.grade || null,
-      remark: row?.grade_remark || null,
+      grade,
+      remark: row?.grade_remark || (grade ? GRADE_REMARKS[grade] : null) || null,
       position_in_subject: position ?? null,
       class_avg: classAvg ?? null,
     };
@@ -184,7 +215,7 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
       average,
       overall_grade: overallGrade?.grade || null,
       position_in_class: positionInClass ?? null,
-      students_in_class: (activeEnrollments as any)?.count ?? null,
+      students_in_class: studentsInClassCount ?? 0,
     },
     behavior: {
       affective: (affectiveTraits || []).map((t: any) => ({ name: t.name, rating: affectiveRatings[t.name] ?? null })),
