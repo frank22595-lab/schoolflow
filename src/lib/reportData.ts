@@ -37,7 +37,7 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
     admin.from('psychomotor_skills').select('name, sequence').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
     admin.from('grade_bands').select('*, grade_scales!inner(is_default, school_id)')
       .eq('grade_scales.is_default', true).eq('grade_scales.school_id', schoolId).order('sequence'),
-    admin.from('assessment_types').select('short_code, is_exam, sequence').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
+    admin.from('assessment_types').select('name, short_code, max_score, sequence').eq('school_id', schoolId).eq('is_active', true).order('sequence'),
   ]);
 
   if (!student || !section || !term) return null;
@@ -62,9 +62,12 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
       .eq('section_id', sectionId).eq('session_id', (term as any).session_id).eq('status', 'active'),
   ]);
 
-  // ---- Assessment short-codes: best-effort map onto ca1/ca2/exam ----
-  const examCode = (assessmentTypes || []).find((a: any) => a.is_exam)?.short_code;
-  const caCodes = (assessmentTypes || []).filter((a: any) => !a.is_exam).map((a: any) => a.short_code);
+  // ---- Assessment columns: school-configured, in sequence order ----
+  const assessmentColumns = (assessmentTypes || []).map((a: any) => ({
+    name: a.name as string,
+    short_code: a.short_code as string,
+    max: Number(a.max_score),
+  }));
 
   // ---- Scores + positions/class-avg per subject (via RPCs) ----
   const scores = await Promise.all((scoreSessions || []).map(async (ss: any) => {
@@ -74,11 +77,14 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
       admin.rpc('calculate_class_avg_for_subject', { score_session_id: ss.id }),
     ]);
     const rawScores = row?.scores || {};
+    const breakdowns = assessmentColumns.map((col) => ({
+      name: col.name,
+      score: rawScores[col.short_code] ?? null,
+      max: col.max,
+    }));
     return {
       subject_name: ss.subjects?.name || 'Subject',
-      ca1: caCodes[0] ? (rawScores[caCodes[0]] ?? null) : null,
-      ca2: caCodes[1] ? (rawScores[caCodes[1]] ?? null) : null,
-      exam: examCode ? (rawScores[examCode] ?? null) : null,
+      breakdowns,
       total: row?.total_score || 0,
       grade: row?.grade || null,
       remark: row?.grade_remark || null,

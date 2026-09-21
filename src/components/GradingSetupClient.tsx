@@ -412,7 +412,9 @@ function ScaleTab({ scale, bands, schoolId, onDone, onErr }: any) {
 function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
   const [rows, setRows] = useState(assessments.map((a: any) => ({ ...a })));
   const [saving, setSaving] = useState(false);
-  const total = rows.reduce((sum: number, r: any) => sum + (parseFloat(r.max_score) || 0), 0);
+  const activeRows = rows.filter((r: any) => r.is_active !== false);
+  const total = Math.round(activeRows.reduce((sum: number, r: any) => sum + (parseFloat(r.max_score) || 0), 0) * 100) / 100;
+  const isValid = total === 100;
 
   function update(i: number, field: string, value: any) {
     setRows((r: any) => r.map((row: any, idx: number) => idx === i ? { ...row, [field]: value } : row));
@@ -425,9 +427,7 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
   }
 
   async function save() {
-    if (total !== 100) {
-      if (!confirm(`Assessments total ${total} (not 100). Continue anyway?`)) return;
-    }
+    if (!isValid) return;
     setSaving(true);
     try {
       const res = await fetch('/api/grading/scale', {
@@ -449,10 +449,17 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-gray-900 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-success" />Edit assessment types</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Fine-tune your assessments</p>
+          <p className="text-xs text-gray-500 mt-0.5">Fine-tune your assessments. Active assessments must sum to 100.</p>
         </div>
-        <div className={`text-sm font-bold ${total === 100 ? 'text-success' : 'text-warning'}`}>Total: {total}/100</div>
+        <div className={`text-sm font-bold whitespace-nowrap ${isValid ? 'text-success' : 'text-error'}`}>Total: {total}/100</div>
       </div>
+
+      {!isValid && (
+        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span>Current total: {total}/100. Must equal 100.</span>
+        </div>
+      )}
 
       <div className="overflow-x-auto -mx-4 lg:-mx-6 px-4 lg:px-6">
         <table className="w-full text-sm">
@@ -462,16 +469,18 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
               <th className="py-2 px-2 font-semibold">Code</th>
               <th className="py-2 px-2 font-semibold">Max</th>
               <th className="py-2 px-2 font-semibold">Exam?</th>
+              <th className="py-2 px-2 font-semibold">Active</th>
               <th className="py-2 px-2 w-8"></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r: any, i: number) => (
-              <tr key={i} className="border-b border-gray-50">
+              <tr key={i} className={`border-b border-gray-50 ${r.is_active === false ? 'opacity-50' : ''}`}>
                 <td className="py-1.5 px-2"><input className="input text-sm" value={r.name} onChange={(e) => update(i, 'name', e.target.value)} /></td>
                 <td className="py-1.5 px-2"><input className="input font-mono text-sm w-20" value={r.short_code} onChange={(e) => update(i, 'short_code', e.target.value.toUpperCase())} /></td>
                 <td className="py-1.5 px-2"><input type="number" step="0.01" className="input text-sm w-24" value={r.max_score} onChange={(e) => update(i, 'max_score', parseFloat(e.target.value))} /></td>
                 <td className="py-1.5 px-2 text-center"><input type="checkbox" className="accent-indigo" checked={r.is_exam} onChange={(e) => update(i, 'is_exam', e.target.checked)} /></td>
+                <td className="py-1.5 px-2 text-center"><input type="checkbox" className="accent-indigo" checked={r.is_active !== false} onChange={(e) => update(i, 'is_active', e.target.checked)} /></td>
                 <td className="py-1.5 px-2"><button onClick={() => removeRow(i)} className="p-1 text-gray-400 hover:text-error"><Trash2 className="w-3.5 h-3.5" /></button></td>
               </tr>
             ))}
@@ -481,7 +490,8 @@ function AssessmentsTab({ assessments, schoolId, onDone, onErr }: any) {
 
       <div className="flex justify-between gap-2 pt-2">
         <button onClick={addRow} className="btn-secondary text-sm"><Plus className="w-4 h-4 mr-1" />Add assessment</button>
-        <button onClick={save} disabled={saving} className="btn-primary text-sm">
+        <button onClick={save} disabled={saving || !isValid} title={!isValid ? `Total must equal 100 (currently ${total})` : undefined}
+          className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
           {saving ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Saving...</> : 'Save changes'}
         </button>
       </div>

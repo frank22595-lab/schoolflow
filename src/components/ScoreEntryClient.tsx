@@ -69,7 +69,8 @@ export default function ScoreEntryClient({ scoreSession, sectionDisplayName, ass
   }
 
   function calcTotal(scoresObj: Record<string, number>) {
-    return Object.values(scoresObj).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    const sum = Object.values(scoresObj).reduce((sum, v) => sum + (Number(v) || 0), 0);
+    return Math.min(sum, 100);
   }
 
   async function updateScore(recordId: string, assessmentCode: string, value: string, isAbsent = false) {
@@ -232,8 +233,8 @@ export default function ScoreEntryClient({ scoreSession, sectionDisplayName, ass
                   <th className="px-3 py-3 font-semibold sticky left-0 bg-gray-50 z-10">Student</th>
                   {assessments.map(a => (
                     <th key={a.id} className="px-2 py-3 font-semibold text-center">
-                      {a.short_code}
-                      <div className="text-[9px] text-gray-400 font-normal">max {a.max_score}</div>
+                      {a.name}
+                      <div className="text-[9px] text-gray-400 font-normal">({a.max_score})</div>
                     </th>
                   ))}
                   <th className="px-2 py-3 font-semibold text-center">Total</th>

@@ -214,8 +214,8 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
     },
     term: { name: 'First Term', session_name: '2025/2026', next_term_begins: nextTermBegins || null },
     scores: [
-      { subject_name: 'Mathematics', ca1: 18, ca2: 17, exam: 52, total: 87, grade: 'A1', remark: 'Excellent', position_in_subject: 1, class_avg: 68.4 },
-      { subject_name: 'English Language', ca1: 15, ca2: 16, exam: 45, total: 76, grade: 'B2', remark: 'Very Good', position_in_subject: 3, class_avg: 65.2 },
+      { subject_name: 'Mathematics', breakdowns: [{ name: 'CA1', score: 18, max: 20 }, { name: 'CA2', score: 17, max: 20 }, { name: 'Exam', score: 52, max: 60 }], total: 87, grade: 'A1', remark: 'Excellent', position_in_subject: 1, class_avg: 68.4 },
+      { subject_name: 'English Language', breakdowns: [{ name: 'CA1', score: 15, max: 20 }, { name: 'CA2', score: 16, max: 20 }, { name: 'Exam', score: 45, max: 60 }], total: 76, grade: 'B2', remark: 'Very Good', position_in_subject: 3, class_avg: 65.2 },
     ],
     summary: { total_marks: 163, average: 81.5, overall_grade: 'A1', position_in_class: 2, students_in_class: 28 },
     behavior: {

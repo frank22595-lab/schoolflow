@@ -33,9 +33,7 @@ export interface ReportTemplateProps {
   };
   scores: Array<{
     subject_name: string;
-    ca1?: number | null;
-    ca2?: number | null;
-    exam?: number | null;
+    breakdowns: Array<{ name: string; score: number | null; max: number }>;
     total?: number | null;
     grade?: string;
     remark?: string;

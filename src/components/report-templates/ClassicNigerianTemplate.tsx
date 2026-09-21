@@ -10,6 +10,7 @@ export default function ClassicNigerianTemplate({
   const accent = color?.accent || primary;
   const initials = `${student.first_name?.[0] || ''}${student.last_name?.[0] || ''}`.toUpperCase();
   const fullName = [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ').toUpperCase();
+  const assessmentColumns = scores[0]?.breakdowns || [];
 
   const stars = (n: number) => {
     const full = Math.max(0, Math.min(5, Math.round(n || 0)));
@@ -155,9 +156,7 @@ export default function ClassicNigerianTemplate({
         <thead>
           <tr>
             <th style={{ textAlign: 'left' }}>Subject</th>
-            <th>CA1<br/>(20)</th>
-            <th>CA2<br/>(20)</th>
-            <th>Exam<br/>(60)</th>
+            {assessmentColumns.map((c, i) => <th key={i}>{c.name}<br/>({c.max})</th>)}
             <th>Total<br/>(100)</th>
             <th>Grade</th>
             {settings?.show_subject_position !== false && <th>Position</th>}
@@ -171,9 +170,7 @@ export default function ClassicNigerianTemplate({
             return (
               <tr key={i}>
                 <td>{s.subject_name}</td>
-                <td>{s.ca1 ?? '—'}</td>
-                <td>{s.ca2 ?? '—'}</td>
-                <td>{s.exam ?? '—'}</td>
+                {s.breakdowns.map((b, bi) => <td key={bi}>{b.score ?? '—'}</td>)}
                 <td><strong>{s.total ?? '—'}</strong></td>
                 <td><span className={`cn-grade ${isFail ? 'fail' : ''}`}>{s.grade || '—'}</span></td>
                 {settings?.show_subject_position !== false && <td>{s.position_in_subject ? ordinal(s.position_in_subject) : '—'}</td>}
@@ -186,7 +183,7 @@ export default function ClassicNigerianTemplate({
         <tfoot>
           <tr>
             <td style={{ textAlign: 'left' }}>TOTAL / AVERAGE ({scores.length} subjects)</td>
-            <td colSpan={3} style={{ textAlign: 'center' }}>{summary.total_marks} / {scores.length * 100}</td>
+            <td colSpan={assessmentColumns.length} style={{ textAlign: 'center' }}>{summary.total_marks} / {scores.length * 100}</td>
             <td>{summary.average?.toFixed(1)}</td>
             <td><span className="cn-grade">{summary.overall_grade || '—'}</span></td>
             <td colSpan={(settings?.show_subject_position !== false ? 1 : 0) + (settings?.show_class_avg !== false ? 1 : 0) + 1} style={{ textAlign: 'left', paddingLeft: 8 }}>Overall Term Performance</td>

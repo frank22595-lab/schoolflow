@@ -38,6 +38,14 @@ export async function POST(req: NextRequest) {
 
     // Handle assessments
     if (assessments) {
+      const activeTotal = assessments
+        .filter((a: any) => a.is_active !== false)
+        .reduce((sum: number, a: any) => sum + (parseFloat(a.max_score) || 0), 0);
+      const roundedTotal = Math.round(activeTotal * 100) / 100;
+      if (roundedTotal !== 100) {
+        return NextResponse.json({ error: `Current total: ${roundedTotal}/100. Must equal 100.` }, { status: 400 });
+      }
+
       await admin.from('assessment_types').delete().eq('school_id', schoolId);
       const rows = assessments.map((a: any, i: number) => ({
         school_id: schoolId,
@@ -47,7 +55,7 @@ export async function POST(req: NextRequest) {
         weight: a.weight ?? a.max_score,
         sequence: i + 1,
         is_exam: a.is_exam || false,
-        is_active: true,
+        is_active: a.is_active !== false,
       }));
       const { error } = await admin.from('assessment_types').insert(rows);
       if (error) return NextResponse.json({ error: 'Save assessments failed: ' + error.message }, { status: 400 });
