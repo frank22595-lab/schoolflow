@@ -237,21 +237,21 @@ export default function DashboardShell({ children, user, school, counts = {} }: 
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <aside className={`hidden lg:flex fixed top-0 left-0 h-full ${sidebarWidth} bg-white border-r border-gray-200 z-30 flex-col transition-all duration-200`}>
+      <aside data-print-hide className={`hidden lg:flex fixed top-0 left-0 h-full ${sidebarWidth} bg-white border-r border-gray-200 z-30 flex-col transition-all duration-200`}>
         {sidebarContent(desktopCollapsed, false)}
       </aside>
 
       {mobileSidebarOpen && (
         <>
-          <div onClick={() => setMobileSidebarOpen(false)}
+          <div data-print-hide onClick={() => setMobileSidebarOpen(false)}
             className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm lg:hidden" />
-          <aside className="fixed top-0 left-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col lg:hidden">
+          <aside data-print-hide className="fixed top-0 left-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col lg:hidden">
             {sidebarContent(false, true)}
           </aside>
         </>
       )}
 
-      <header className={`sticky top-0 z-20 bg-white border-b border-gray-200 ${mainOffset} transition-all duration-200`}>
+      <header data-print-hide className={`sticky top-0 z-20 bg-white border-b border-gray-200 ${mainOffset} transition-all duration-200`}>
         <div className="flex items-center justify-between h-14 lg:h-16 px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileSidebarOpen(true)}
@@ -335,7 +335,7 @@ export default function DashboardShell({ children, user, school, counts = {} }: 
         {children}
       </main>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-lg">
+      <nav data-print-hide className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-lg">
         <div className="grid grid-cols-5 h-16">
           {bottomNav.map(item => {
             const active = isActive(item.href);
@@ -370,8 +370,8 @@ export default function DashboardShell({ children, user, school, counts = {} }: 
 
       {moreOpen && (
         <>
-          <div onClick={() => setMoreOpen(false)} className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm lg:hidden" />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl lg:hidden max-h-[80vh] overflow-y-auto">
+          <div data-print-hide onClick={() => setMoreOpen(false)} className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm lg:hidden" />
+          <div data-print-hide className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl lg:hidden max-h-[80vh] overflow-y-auto">
             <div className="sticky top-0 bg-white px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="font-semibold text-gray-900">More options</h3>
