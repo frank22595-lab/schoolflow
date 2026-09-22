@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   Home, Users, ClipboardCheck, Wallet, BookOpen, Menu, X,
   Bell, Search, GraduationCap, Settings, LogOut,
-  Briefcase, Heart, MessageCircle, BarChart3,
+  Briefcase, Heart, MessageCircle, BarChart3, FileQuestion,
   User as UserIcon, KeyRound, Palette, MoreHorizontal, ChevronDown,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
@@ -86,6 +86,7 @@ export default function DashboardShell({ children, user, school, counts = {} }: 
       items: [
         { label: 'Attendance', href: '/dashboard/attendance', icon: ClipboardCheck, count: undefined },
         { label: 'Grades & Results', href: '/dashboard/grades', icon: BookOpen, count: undefined },
+        { label: 'Exams', href: '/dashboard/exams', icon: FileQuestion, count: undefined },
         { label: 'Communication', href: '/dashboard/communication', icon: MessageCircle, count: undefined },
       ],
     },
@@ -122,6 +123,7 @@ export default function DashboardShell({ children, user, school, counts = {} }: 
       label: 'Academics',
       items: [
         { label: 'Grades & Results', href: '/dashboard/grades', icon: BookOpen, color: 'text-amber-600', bg: 'bg-amber-50', count: undefined },
+        { label: 'Exams', href: '/dashboard/exams', icon: FileQuestion, color: 'text-indigo', bg: 'bg-indigo-50', count: undefined },
         { label: 'Communication', href: '/dashboard/communication', icon: MessageCircle, color: 'text-sky-600', bg: 'bg-sky-50', count: undefined },
       ],
     },
