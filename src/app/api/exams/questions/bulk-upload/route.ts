@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
         let options: any = null;
         let correctAnswer: any = null;
-        let acceptableAnswers: any = null;
+        let acceptableAnswers: string[] | null = null;
 
         if (questionType === 'mcq_single' || questionType === 'mcq_multiple') {
           const optionTexts = OPTION_LETTERS.map(l => str(raw[`option_${l.toLowerCase()}`]));
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
         } else if (questionType === 'fill_blank') {
           const answers = str(raw.correct_answer).split(';').map(s => s.trim()).filter(Boolean);
           if (answers.length === 0) { errors.push({ row: rowNum, error: 'At least one acceptable answer required (separate multiple with ;)' }); continue; }
-          acceptableAnswers = { acceptable_answers: answers, case_sensitive: false };
+          acceptableAnswers = answers;
         }
         // short_answer / essay: no answer payload — manually graded
 
@@ -142,6 +142,8 @@ export async function POST(req: NextRequest) {
         const { error: insertErr } = await admin.from('questions').insert({
           school_id: schoolId,
           bank_id: bankId,
+          subject_id: subjectId,
+          class_level_id: classLevelId,
           question_type: questionType,
           difficulty,
           topic,
@@ -149,7 +151,7 @@ export async function POST(req: NextRequest) {
           options,
           correct_answer: correctAnswer,
           acceptable_answers: acceptableAnswers,
-          points,
+          default_points: points,
           explanation,
           created_by: user.id,
         });
