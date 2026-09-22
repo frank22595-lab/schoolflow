@@ -15,10 +15,9 @@ export default async function ReportCardDesignerPage() {
   const { data: profile } = await supabase.from('users').select('school_id').eq('id', user!.id).single();
   const schoolId = profile!.school_id;
 
-  const [{ data: settings }, { data: classLevels }, { data: colors }, { data: school }] = await Promise.all([
+  const [{ data: settings }, { data: classLevels }, { data: school }] = await Promise.all([
     admin.from('report_card_settings').select('*').eq('school_id', schoolId).maybeSingle(),
     admin.from('class_levels').select('id, name, sequence').eq('school_id', schoolId).order('sequence'),
-    admin.from('class_level_report_style').select('*').eq('school_id', schoolId),
     admin.from('schools').select('name, address, phone, email, logo_url, motto').eq('id', schoolId).single(),
   ]);
 
@@ -38,7 +37,6 @@ export default async function ReportCardDesignerPage() {
         schoolId={schoolId}
         initialSettings={settings}
         classLevels={classLevels || []}
-        initialColors={colors || []}
         school={school}
       />
     </div>

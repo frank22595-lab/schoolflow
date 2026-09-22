@@ -4,50 +4,32 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Save, Loader2, CheckCircle2, AlertCircle, Upload, X, Image as ImageIcon,
-  Stamp, PenTool, User, Palette, Calendar, Settings as SettingsIcon,
+  Stamp, Palette, Calendar, Settings as SettingsIcon, Check,
 } from 'lucide-react';
 import { compressImageToDataUrl } from '@/lib/compressImage';
-import { getReportTemplate } from '@/components/report-templates';
+import { TEMPLATE_OPTIONS, getStylesForTemplate, getReportTemplate } from '@/components/report-templates';
+import type { ColorStyle } from '@/components/report-templates';
 
-const SWATCHES: Array<{ name: string; hex: string }> = [
-  { name: 'Indigo', hex: '#4F46E5' },
-  { name: 'Teal', hex: '#0D9488' },
-  { name: 'Rose', hex: '#E11D48' },
-  { name: 'Blue', hex: '#2563EB' },
-  { name: 'Green', hex: '#16A34A' },
-  { name: 'Maroon', hex: '#7F1D1D' },
-  { name: 'Purple', hex: '#7C3AED' },
-  { name: 'Orange', hex: '#EA580C' },
-  { name: 'Gold', hex: '#CA8A04' },
-  { name: 'Slate', hex: '#475569' },
-];
-
-const TEMPLATES = [
-  { key: 'classic-nigerian', label: 'Classic Nigerian', desc: 'Traditional WAEC-style bordered tables' },
-  { key: 'modern-minimal', label: 'Modern Minimal', desc: 'Clean, generous whitespace, subtle accents' },
-  { key: 'executive', label: 'Executive', desc: 'Formal and dense, suits secondary schools' },
-  { key: 'compact-grid', label: 'Compact Grid', desc: 'Fits everything on one page' },
-  { key: 'warm-academic', label: 'Warm Academic', desc: 'Softer tones for primary/nursery' },
-];
+// Flat list of all 18 template+color combinations, in TEMPLATE_OPTIONS order.
+const ALL_STYLE_COMBOS: Array<{ templateKey: string; templateLabel: string; style: ColorStyle }> =
+  TEMPLATE_OPTIONS.flatMap(t => getStylesForTemplate(t.key).map(style => ({ templateKey: t.key, templateLabel: t.label, style })));
 
 const TOGGLE_GROUPS: Array<{ title: string; keys: Array<{ key: string; label: string }> }> = [
   {
-    title: 'Header & Identity',
+    title: 'Student card',
     keys: [
-      { key: 'show_logo', label: 'School logo' },
-      { key: 'show_motto', label: 'School motto' },
+      { key: 'show_photo', label: 'Student photo' },
+      { key: 'show_house', label: 'House' },
     ],
   },
   {
     title: 'Academic',
     keys: [
-      { key: 'show_class_position', label: 'Class position' },
+      { key: 'show_position', label: 'Class position' },
       { key: 'show_subject_position', label: 'Subject position' },
-      { key: 'show_cumulative_average', label: 'Cumulative average' },
-      { key: 'show_class_average', label: 'Class average per subject' },
-      { key: 'show_highest_lowest', label: 'Highest & lowest per subject' },
-      { key: 'show_gpa', label: 'GPA' },
+      { key: 'show_class_avg', label: 'Class average per subject' },
       { key: 'show_attendance', label: 'Attendance summary' },
+      { key: 'show_cumulative', label: 'Cumulative average table' },
     ],
   },
   {
@@ -67,38 +49,36 @@ const TOGGLE_GROUPS: Array<{ title: string; keys: Array<{ key: string; label: st
   {
     title: 'Footer',
     keys: [
-      { key: 'show_next_term_dates', label: 'Next term dates' },
-      { key: 'show_fees_notice', label: 'Fees notice' },
-      { key: 'show_signatures', label: 'Signature lines' },
-      { key: 'show_stamp_area', label: 'School stamp area' },
+      { key: 'show_grade_scale', label: 'Grading scale legend' },
     ],
   },
 ];
 
 const DEFAULT_TOGGLES: Record<string, boolean> = {
-  show_class_position: true, show_subject_position: true, show_cumulative_average: true,
-  show_class_average: true, show_highest_lowest: true, show_gpa: false, show_attendance: true,
-  show_affective: true, show_psychomotor: true, show_teacher_comment: true, show_principal_comment: true,
-  show_next_term_dates: true, show_fees_notice: false, show_signatures: true, show_stamp_area: true,
-  show_logo: true, show_motto: true,
+  show_photo: true, show_house: true, show_position: true, show_subject_position: true,
+  show_class_avg: true, show_attendance: true, show_cumulative: true, show_affective: true,
+  show_psychomotor: true, show_teacher_comment: true, show_principal_comment: true, show_grade_scale: true,
 };
 
 interface ClassLevel { id: string; name: string; sequence: number; }
-interface ColorRow { class_level_id: string; primary_color: string; accent_color: string | null; }
 
 interface Props {
   schoolId: string;
   initialSettings: any;
   classLevels: ClassLevel[];
-  initialColors: ColorRow[];
   school: any;
 }
 
-export default function ReportCardDesignerClient({ schoolId, initialSettings, classLevels, initialColors, school }: Props) {
+export default function ReportCardDesignerClient({ schoolId, initialSettings, classLevels, school }: Props) {
   const router = useRouter();
   const s = initialSettings || {};
 
-  const [templateKey, setTemplateKey] = useState<string>(s.template_key || 'modern-minimal');
+  const initialStyleKey =
+    s.template_style_key ||
+    (s.template_key ? getStylesForTemplate(s.template_key)[0]?.key : null) ||
+    'ducams-classic-royal';
+
+  const [styleKey, setStyleKey] = useState<string>(initialStyleKey);
   const [logoUrl, setLogoUrl] = useState<string | null>(s.logo_url || null);
   const [stampUrl, setStampUrl] = useState<string | null>(s.stamp_url || null);
   const [principalSignatureUrl, setPrincipalSignatureUrl] = useState<string | null>(s.principal_signature_url || null);
@@ -108,13 +88,6 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
   const [headerMotto, setHeaderMotto] = useState(s.header_motto || '');
   const [footerNote, setFooterNote] = useState(s.footer_note || '');
   const [nextTermFees, setNextTermFees] = useState(s.next_term_fees || '');
-
-  const [colors, setColors] = useState<Record<string, { primary: string; accent: string | null }>>(() => {
-    const map: Record<string, { primary: string; accent: string | null }> = {};
-    classLevels.forEach(l => { map[l.id] = { primary: '#4F46E5', accent: null }; });
-    initialColors.forEach(c => { map[c.class_level_id] = { primary: c.primary_color, accent: c.accent_color }; });
-    return map;
-  });
 
   const [toggles, setToggles] = useState<Record<string, boolean>>(() => {
     const t: Record<string, boolean> = { ...DEFAULT_TOGGLES };
@@ -127,6 +100,9 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // ---- Selection ----
+  const selectedCombo = ALL_STYLE_COMBOS.find(c => c.style.key === styleKey) || ALL_STYLE_COMBOS[0];
 
   function showToast(type: 'success' | 'error', msg: string) {
     setToast({ type, msg });
@@ -155,24 +131,14 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
     }
   }
 
-  function setColor(classLevelId: string, field: 'primary' | 'accent', value: string | null) {
-    setColors(c => ({ ...c, [classLevelId]: { ...c[classLevelId], [field]: value } }));
-  }
-
   async function save() {
     setSaving(true);
     try {
       const res = await fetch('/api/reports/settings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          schoolId, templateKey, principalName, nextTermBegins,
-          headerMotto, footerNote, nextTermFees,
-          toggles,
-          colors: classLevels.map(l => ({
-            classLevelId: l.id,
-            primaryColor: colors[l.id]?.primary || '#4F46E5',
-            accentColor: colors[l.id]?.accent || null,
-          })),
+          schoolId, templateKey: selectedCombo.templateKey, styleKey: selectedCombo.style.key,
+          principalName, nextTermBegins, headerMotto, footerNote, nextTermFees, toggles,
         }),
       });
       const data = await res.json();
@@ -188,8 +154,7 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
 
   // ---- Live preview ----
   const previewClassLevel = classLevels[0];
-  const previewColor = previewClassLevel ? colors[previewClassLevel.id] : { primary: '#4F46E5', accent: null };
-  const PreviewTemplate = getReportTemplate(templateKey);
+  const PreviewTemplate = getReportTemplate(selectedCombo.templateKey);
 
   const previewProps = useMemo(() => ({
     school: {
@@ -230,9 +195,9 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
       { grade: 'B2', min: 70, max: 74.99, remark: 'Very Good' },
       { grade: 'F9', min: 0, max: 39.99, remark: 'Fail' },
     ],
-    settings: { ...toggles, template_key: templateKey, next_term_fees: nextTermFees || null },
-    color: { primary: previewColor?.primary || '#4F46E5', accent: previewColor?.accent || undefined },
-  }), [school, logoUrl, stampUrl, principalSignatureUrl, principalName, headerMotto, footerNote, nextTermBegins, nextTermFees, toggles, templateKey, previewClassLevel, previewColor]);
+    settings: { ...toggles, template_key: selectedCombo.templateKey, template_style_key: selectedCombo.style.key, next_term_fees: nextTermFees || null },
+    style: selectedCombo.style,
+  }), [school, logoUrl, stampUrl, principalSignatureUrl, principalName, headerMotto, footerNote, nextTermBegins, nextTermFees, toggles, selectedCombo, previewClassLevel]);
 
   return (
     <div className="space-y-6 pb-24">
@@ -240,7 +205,7 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Report Card Designer</h1>
-          <p className="text-gray-500 mt-1 text-sm">Template, branding, colors, and what appears on printed reports</p>
+          <p className="text-gray-500 mt-1 text-sm">Template + color style, branding, and what appears on printed reports</p>
         </div>
         <button onClick={save} disabled={saving} className="btn-primary text-sm flex-shrink-0">
           {saving ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-1.5" />Save Changes</>}
@@ -250,18 +215,34 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT: settings */}
         <div className="space-y-6">
-          {/* Section 1: Template picker */}
-          <Card icon={ImageIcon} iconColor="text-indigo" iconBg="bg-indigo-50" title="Template" desc="Pick a layout — you can change it anytime">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {TEMPLATES.map(t => (
-                <button key={t.key} type="button" onClick={() => setTemplateKey(t.key)}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
-                    templateKey === t.key ? 'border-indigo bg-indigo-50' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}>
-                  <div className="font-medium text-sm text-gray-900">{t.label}</div>
-                  <div className="text-[11px] text-gray-500 mt-0.5">{t.desc}</div>
-                </button>
-              ))}
+          {/* Section 1: Template + color style grid */}
+          <Card icon={Palette} iconColor="text-indigo" iconBg="bg-indigo-50" title="Template & color" desc="18 combinations — 6 templates x 3 color styles each">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {ALL_STYLE_COMBOS.map(combo => {
+                const selected = combo.style.key === styleKey;
+                return (
+                  <button key={combo.style.key} type="button" onClick={() => setStyleKey(combo.style.key)}
+                    style={{ ['--primary' as any]: combo.style.primary, borderColor: selected ? 'var(--primary)' : undefined }}
+                    className={`rounded-lg border-2 overflow-hidden text-left transition-all bg-white ${
+                      selected ? 'ring-2 ring-offset-1 ring-[color:var(--primary)]/30' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                    <div className="h-12 w-full" style={{ background: combo.style.bg }}>
+                      <div className="h-3 w-full" style={{ background: combo.style.primary }} />
+                      <div className="flex items-center gap-1.5 px-2 pt-1.5">
+                        <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ background: combo.style.accent }} />
+                        <div className="flex-1 h-2.5 rounded" style={{ background: combo.style.soft, border: `1px solid ${combo.style.primary}` }} />
+                      </div>
+                    </div>
+                    <div className="px-2 py-1.5">
+                      <div className="text-xs font-semibold text-gray-900 truncate">{combo.templateLabel}</div>
+                      <div className="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                        {selected && <Check className="w-2.5 h-2.5 flex-shrink-0" style={{ color: combo.style.primary }} />}
+                        {combo.style.label}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </Card>
 
@@ -285,33 +266,8 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
             </div>
           </Card>
 
-          {/* Section 3: Class-level colors */}
-          <Card icon={Palette} iconColor="text-emerald-600" iconBg="bg-emerald-50" title="Class-level colors" desc="Each class level gets its own accent color on report cards">
-            {classLevels.length === 0 ? (
-              <div className="text-sm text-gray-500 py-4 text-center">No class levels set up yet.</div>
-            ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {classLevels.map(l => (
-                  <div key={l.id} className="flex items-center gap-3 p-2 border border-gray-100 rounded-lg">
-                    <div className="w-24 text-sm font-medium text-gray-900 truncate">{l.name}</div>
-                    <div className="flex-1 flex items-center gap-1 flex-wrap">
-                      {SWATCHES.map(sw => (
-                        <button key={sw.hex} type="button" title={sw.name} onClick={() => setColor(l.id, 'primary', sw.hex)}
-                          className={`w-6 h-6 rounded-full border-2 flex-shrink-0 ${colors[l.id]?.primary === sw.hex ? 'border-gray-900' : 'border-white shadow'}`}
-                          style={{ backgroundColor: sw.hex }} />
-                      ))}
-                    </div>
-                    <input type="text" className="input text-xs font-mono w-24 flex-shrink-0" placeholder="#4F46E5"
-                      value={colors[l.id]?.primary || ''} onChange={(e) => setColor(l.id, 'primary', e.target.value)} />
-                    <div className="w-6 h-6 rounded-full border border-gray-200 flex-shrink-0" style={{ backgroundColor: colors[l.id]?.primary || '#4F46E5' }} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* Section 4: Next term date */}
-          <Card icon={Calendar} iconColor="text-sky-600" iconBg="bg-sky-50" title="Next term" desc="Shown in the footer when the 'Next term dates' toggle is on">
+          {/* Section 3: Next term date */}
+          <Card icon={Calendar} iconColor="text-sky-600" iconBg="bg-sky-50" title="Next term" desc="Shown in the report footer">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="label">Next term begins</label>
@@ -329,7 +285,7 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
             </div>
           </Card>
 
-          {/* Section 5: Toggles */}
+          {/* Section 4: Toggles */}
           <Card icon={SettingsIcon} iconColor="text-gray-600" iconBg="bg-gray-100" title="What to show" desc="Toggle sections on or off the printed report">
             <div className="space-y-4">
               {TOGGLE_GROUPS.map(group => (
@@ -354,10 +310,10 @@ export default function ReportCardDesignerClient({ schoolId, initialSettings, cl
         <div className="lg:sticky lg:top-6 lg:self-start space-y-3">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-gray-900 text-sm">Live preview</h3>
-            <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{TEMPLATES.find(t => t.key === templateKey)?.label}</span>
+            <span className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{selectedCombo.templateLabel} · {selectedCombo.style.label}</span>
           </div>
           <div className="max-h-[80vh] overflow-y-auto">
-            <PreviewTemplate {...previewProps} />
+            <PreviewTemplate {...(previewProps as any)} />
           </div>
         </div>
       </div>

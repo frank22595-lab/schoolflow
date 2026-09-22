@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ReportTemplateProps } from '@/components/report-templates';
+import { getColorStyle } from '@/components/report-templates';
 
 interface BuildArgs {
   schoolId: string;
@@ -75,14 +76,10 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
   const classLevelName: string = (section as any).classes?.class_levels?.name || section.name;
 
   const [
-    { data: colorRow },
     { data: teacher },
     { data: allTermsInSession },
     { count: studentsInClassCount },
   ] = await Promise.all([
-    classLevelId
-      ? admin.from('class_level_report_style').select('primary_color, accent_color').eq('school_id', schoolId).eq('class_level_id', classLevelId).maybeSingle()
-      : Promise.resolve({ data: null }),
     (section as any).section_teacher_id
       ? admin.from('users').select('display_name, first_name, last_name').eq('id', (section as any).section_teacher_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -175,6 +172,7 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
 
   const settingsRow = settings || {};
   const teacherName = (teacher as any)?.display_name || ((teacher as any) ? `${(teacher as any).first_name} ${(teacher as any).last_name}` : null);
+  const style = getColorStyle((settingsRow as any).template_key, (settingsRow as any).template_style_key);
 
   return {
     school: {
@@ -239,9 +237,6 @@ export async function buildReportCardProps(admin: SupabaseClient, { schoolId, te
       grade: b.grade, min: Number(b.min_score), max: Number(b.max_score), remark: b.remark || null,
     })),
     settings: settingsRow,
-    color: {
-      primary: (colorRow as any)?.primary_color || '#4F46E5',
-      accent: (colorRow as any)?.accent_color || null,
-    },
+    style,
   };
 }

@@ -8,11 +8,11 @@ const admin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+// Matches ReportTemplateProps['settings'] — the flags the templates actually read.
 const TOGGLE_KEYS = [
-  'show_class_position', 'show_subject_position', 'show_cumulative_average', 'show_class_average',
-  'show_highest_lowest', 'show_gpa', 'show_attendance', 'show_affective', 'show_psychomotor',
-  'show_teacher_comment', 'show_principal_comment', 'show_next_term_dates', 'show_fees_notice',
-  'show_signatures', 'show_stamp_area', 'show_logo', 'show_motto',
+  'show_photo', 'show_house', 'show_position', 'show_subject_position', 'show_class_avg',
+  'show_attendance', 'show_cumulative', 'show_affective', 'show_psychomotor',
+  'show_teacher_comment', 'show_principal_comment', 'show_grade_scale',
 ];
 
 export async function POST(req: NextRequest) {
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const {
-      schoolId, templateKey, principalName, nextTermBegins,
-      headerMotto, footerNote, nextTermFees, toggles, colors,
+      schoolId, templateKey, styleKey, principalName, nextTermBegins,
+      headerMotto, footerNote, nextTermFees, toggles,
     } = await req.json();
 
     const { data: profile } = await admin.from('users').select('school_id').eq('id', user.id).single();
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
 
     const settingsRow: any = { school_id: schoolId };
     if (templateKey) settingsRow.template_key = templateKey;
+    if (styleKey) settingsRow.template_style_key = styleKey;
     settingsRow.principal_name = principalName || null;
     settingsRow.next_term_begins = nextTermBegins || null;
     settingsRow.header_motto = headerMotto || null;
@@ -45,17 +46,6 @@ export async function POST(req: NextRequest) {
 
     const { error: settingsErr } = await admin.from('report_card_settings').upsert(settingsRow, { onConflict: 'school_id' });
     if (settingsErr) return NextResponse.json({ error: 'Save settings failed: ' + settingsErr.message }, { status: 400 });
-
-    if (Array.isArray(colors) && colors.length > 0) {
-      const rows = colors.map((c: any) => ({
-        school_id: schoolId,
-        class_level_id: c.classLevelId,
-        primary_color: c.primaryColor || '#4F46E5',
-        accent_color: c.accentColor || null,
-      }));
-      const { error: colorErr } = await admin.from('class_level_report_style').upsert(rows, { onConflict: 'school_id,class_level_id' });
-      if (colorErr) return NextResponse.json({ error: 'Save colors failed: ' + colorErr.message }, { status: 400 });
-    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
