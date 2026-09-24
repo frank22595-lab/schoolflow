@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { EXAM_EDITABLE_FIELDS, EXAM_STATUSES, EXAM_DETAIL_SELECT } from '@/lib/exams';
+import { EXAM_EDITABLE_FIELDS, EXAM_FIELD_ALIASES, EXAM_STATUSES, EXAM_DETAIL_SELECT } from '@/lib/exams';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .select(EXAM_DETAIL_SELECT)
       .eq('id', id)
       .eq('school_id', schoolId)
-      .order('display_order', { referencedTable: 'exam_questions' })
+      .order('order_index', { referencedTable: 'exam_questions' })
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     if (!exam) return NextResponse.json({ error: 'Exam not found' }, { status: 404 });
@@ -70,6 +70,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     for (const field of EXAM_EDITABLE_FIELDS) {
       if (body[field] !== undefined) update[field] = body[field];
     }
+    for (const [alias, dbField] of Object.entries(EXAM_FIELD_ALIASES)) {
+      if (body[alias] !== undefined && update[dbField] === undefined) update[dbField] = body[alias];
+    }
     if (status !== undefined) {
       if (!EXAM_STATUSES.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
       update.status = status;
@@ -86,10 +89,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
       if (questions.length > 0) {
         const rows = questions.map((q: any, i: number) => ({
-          school_id: schoolId,
           exam_id: id,
           question_id: q.question_id,
-          display_order: q.display_order ?? i,
+          order_index: q.display_order ?? i,
           points: q.points ?? 1,
         }));
         const { error: insErr } = await admin.from('exam_questions').insert(rows);
@@ -100,7 +102,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { data: exam, error: fetchErr } = await admin.from('exams')
       .select(EXAM_DETAIL_SELECT)
       .eq('id', id)
-      .order('display_order', { referencedTable: 'exam_questions' })
+      .order('order_index', { referencedTable: 'exam_questions' })
       .single();
     if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 400 });
 

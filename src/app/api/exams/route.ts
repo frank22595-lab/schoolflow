@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { EXAM_EDITABLE_FIELDS, EXAM_LIST_SELECT, EXAM_DETAIL_SELECT } from '@/lib/exams';
+import { EXAM_EDITABLE_FIELDS, EXAM_FIELD_ALIASES, EXAM_LIST_SELECT, EXAM_DETAIL_SELECT } from '@/lib/exams';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
     for (const field of EXAM_EDITABLE_FIELDS) {
       if (body[field] !== undefined) insertRow[field] = body[field];
     }
+    for (const [alias, dbField] of Object.entries(EXAM_FIELD_ALIASES)) {
+      if (body[alias] !== undefined && insertRow[dbField] === undefined) insertRow[dbField] = body[alias];
+    }
     if (status === 'draft' || status === 'scheduled') insertRow.status = status;
 
     const { data: exam, error: examErr } = await admin.from('exams').insert(insertRow).select('id').single();
@@ -71,10 +74,9 @@ export async function POST(req: NextRequest) {
 
     if (Array.isArray(questions) && questions.length > 0) {
       const rows = questions.map((q: any, i: number) => ({
-        school_id: schoolId,
         exam_id: exam.id,
         question_id: q.question_id,
-        display_order: q.display_order ?? i,
+        order_index: q.display_order ?? i,
         points: q.points ?? 1,
       }));
       const { error: eqErr } = await admin.from('exam_questions').insert(rows);
@@ -89,7 +91,7 @@ export async function POST(req: NextRequest) {
     const { data: fullExam, error: fetchErr } = await admin.from('exams')
       .select(EXAM_DETAIL_SELECT)
       .eq('id', exam.id)
-      .order('display_order', { referencedTable: 'exam_questions' })
+      .order('order_index', { referencedTable: 'exam_questions' })
       .single();
     if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 400 });
 

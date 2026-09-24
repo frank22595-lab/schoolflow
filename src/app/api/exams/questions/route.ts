@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { QUESTION_TYPES, DIFFICULTIES } from '@/lib/exams';
+import { QUESTION_TYPES, DIFFICULTIES, QUESTION_SELECT, unwrapAcceptableAnswers, transformQuestionOut } from '@/lib/exams';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
-
-const QUESTION_SELECT = '*, bank:question_banks!inner(id, name, subject_id, class_level_id, subject:subjects(name), class_level:class_levels(name))';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,15 +24,14 @@ export async function GET(req: NextRequest) {
 
     let query = admin.from('questions')
       .select(QUESTION_SELECT)
-      .eq('school_id', profile.school_id)
-      .eq('is_active', true);
-    if (subjectId) query = query.eq('bank.subject_id', subjectId);
-    if (classLevelId) query = query.eq('bank.class_level_id', classLevelId);
+      .eq('school_id', profile.school_id);
+    if (subjectId) query = query.eq('subject_id', subjectId);
+    if (classLevelId) query = query.eq('class_level_id', classLevelId);
 
     const { data: questions, error } = await query.order('created_at', { ascending: false });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    return NextResponse.json({ questions: questions || [] });
+    return NextResponse.json({ questions: (questions || []).map(transformQuestionOut) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 });
   }
@@ -59,13 +56,15 @@ export async function POST(req: NextRequest) {
     if (!QUESTION_TYPES.includes(question_type)) return NextResponse.json({ error: 'Invalid question_type' }, { status: 400 });
     if (!question_text?.trim()) return NextResponse.json({ error: 'question_text is required' }, { status: 400 });
 
-    const { data: bank } = await admin.from('question_banks').select('id').eq('id', bank_id).eq('school_id', schoolId).maybeSingle();
+    const { data: bank } = await admin.from('question_banks').select('id, subject_id, class_level_id').eq('id', bank_id).eq('school_id', schoolId).maybeSingle();
     if (!bank) return NextResponse.json({ error: 'Question bank not found in this school' }, { status: 400 });
 
     const { data: question, error } = await admin.from('questions')
       .insert({
         school_id: schoolId,
         bank_id,
+        subject_id: bank.subject_id,
+        class_level_id: bank.class_level_id,
         question_type,
         difficulty: DIFFICULTIES.includes(difficulty) ? difficulty : 'medium',
         topic: topic || null,
@@ -73,8 +72,8 @@ export async function POST(req: NextRequest) {
         question_image_url: question_image_url || null,
         options: options ?? null,
         correct_answer: correct_answer ?? null,
-        acceptable_answers: acceptable_answers ?? null,
-        points: points ?? 1,
+        acceptable_answers: unwrapAcceptableAnswers(acceptable_answers),
+        default_points: points ?? 1,
         explanation: explanation || null,
         created_by: user.id,
       })
@@ -82,7 +81,7 @@ export async function POST(req: NextRequest) {
       .single();
     if (error) return NextResponse.json({ error: 'Create question failed: ' + error.message }, { status: 400 });
 
-    return NextResponse.json({ question });
+    return NextResponse.json({ question: transformQuestionOut(question) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 });
   }

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { QUESTION_SELECT, transformQuestionOut } from '@/lib/exams';
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
-
-const QUESTION_SELECT = '*, bank:question_banks(id, name, subject_id, class_level_id, subject:subjects(name), class_level:class_levels(name))';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +27,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .insert({
         school_id: original.school_id,
         bank_id: original.bank_id,
+        subject_id: original.subject_id,
+        class_level_id: original.class_level_id,
         passage_id: original.passage_id,
         question_type: original.question_type,
         difficulty: original.difficulty,
@@ -37,16 +38,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         options: original.options,
         correct_answer: original.correct_answer,
         acceptable_answers: original.acceptable_answers,
-        points: original.points,
+        default_points: original.default_points,
         explanation: original.explanation,
-        is_active: true,
+        tags: original.tags,
         created_by: user.id,
       })
       .select(QUESTION_SELECT)
       .single();
     if (error) return NextResponse.json({ error: 'Duplicate failed: ' + error.message }, { status: 400 });
 
-    return NextResponse.json({ question: copy });
+    return NextResponse.json({ question: transformQuestionOut(copy) });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Server error' }, { status: 500 });
   }

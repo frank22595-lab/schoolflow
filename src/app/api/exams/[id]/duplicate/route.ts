@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!profile?.school_id) return NextResponse.json({ error: 'No school' }, { status: 403 });
     const schoolId = profile.school_id;
 
-    const { data: original } = await admin.from('exams').select('*, exam_questions(question_id, display_order, points)')
+    const { data: original } = await admin.from('exams').select('*, exam_questions(question_id, order_index, points)')
       .eq('id', id).eq('school_id', schoolId).maybeSingle();
     if (!original) return NextResponse.json({ error: 'Exam not found' }, { status: 404 });
 
@@ -34,10 +34,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const originalQuestions = (original as any).exam_questions || [];
     if (originalQuestions.length > 0) {
       const rows = originalQuestions.map((eq: any) => ({
-        school_id: schoolId,
         exam_id: copy.id,
         question_id: eq.question_id,
-        display_order: eq.display_order,
+        order_index: eq.order_index,
         points: eq.points,
       }));
       const { error: eqErr } = await admin.from('exam_questions').insert(rows);
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { data: exam, error: fetchErr } = await admin.from('exams')
       .select(EXAM_DETAIL_SELECT)
       .eq('id', copy.id)
-      .order('display_order', { referencedTable: 'exam_questions' })
+      .order('order_index', { referencedTable: 'exam_questions' })
       .single();
     if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 400 });
 
