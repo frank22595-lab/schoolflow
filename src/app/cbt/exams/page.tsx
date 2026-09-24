@@ -67,7 +67,7 @@ export default function StudentExamsListPage() {
   }
 
   function startExam(examId: string) {
-    router.push(`/cbt/exam/${examId}`);
+    router.push(`/cbt/exams/${examId}`);
   }
 
   const availableExams = exams.filter((e) => e.session_status !== 'submitted' && e.session_status !== 'graded');
